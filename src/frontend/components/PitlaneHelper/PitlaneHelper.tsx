@@ -8,6 +8,8 @@ import { useTelemetryValue, useDashboard } from '@irdashies/context';
 import { getDemoPitlaneData, PitlaneHelperSettings, PitSpeedResult, PitboxPositionResult, PitLimiterWarningResult, PitlaneTrafficResult } from './demoData';
 import { PitCountdownBar } from './components/PitCountdownBar';
 import { PitExitInputs } from './components/PitExitInputs';
+import { PitSpeedBar } from './components/PitSpeedBar';
+import { PitboxPositionBar } from './components/PitboxPositionBar';
 
 // Calculate color for countdown bars based on distance
 const getCountdownColor = (distance: number, maxDistance: number): string => {
@@ -76,31 +78,55 @@ export const PitlaneHelper = () => {
         minWidth: '150px',
       }}
     >
-      {/* Speed Delta */}
-      <div
-        className={[
-          'flex flex-col items-center p-2 rounded transition-all',
-          speed.isSeverelyOver
-            ? 'bg-red-600 animate-pulse'
-            : speed.isSpeeding
-              ? 'bg-red-600/50'
-              : '',
-        ].join(' ')}
-      >
+      {/* Speed Display - combines numeric delta, optional vertical bar, and optional position bar */}
+      <div className="flex gap-2 items-stretch">
+        {/* Numeric Speed Delta */}
         <div
           className={[
-            'text-2xl font-bold transition-colors',
-            speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
+            'flex flex-col items-center p-2 rounded transition-all flex-1',
+            speed.isSeverelyOver
+              ? 'bg-red-600 animate-pulse'
+              : speed.isSpeeding
+                ? 'bg-red-600/50'
+                : '',
           ].join(' ')}
         >
-          {speed.deltaKph > 0 ? '+' : ''}
-          {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
+          <div
+            className={[
+              'text-2xl font-bold transition-colors',
+              speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
+            ].join(' ')}
+          >
+            {speed.deltaKph > 0 ? '+' : ''}
+            {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
+            {displayKph ? 'km/h' : 'mph'}
+          </div>
+          <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
+            Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
+            {displayKph ? 'km/h' : 'mph'}
+          </div>
         </div>
-        <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
-          Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
-        </div>
+
+        {/* Optional Vertical Speed Bar */}
+        {config.showSpeedBar && (
+          <PitSpeedBar
+            currentSpeed={displayKph ? speed.speedKph : speed.speedMph}
+            limitSpeed={displayKph ? speed.limitKph : speed.limitMph}
+            unit={displayKph ? 'km/h' : 'mph'}
+            isSpeeding={speed.isSpeeding}
+            isSeverelyOver={speed.isSeverelyOver}
+          />
+        )}
+
+        {/* Optional Pitbox Position Bar - only shown when on pit road */}
+        {config.showPositionBar && onPitRoad && (
+          <PitboxPositionBar
+            distanceToPit={position.distanceToPit}
+            outerThreshold={config.positionBarOuterThreshold}
+            innerThreshold={config.positionBarInnerThreshold}
+            targetZone={config.positionBarTargetZone}
+          />
+        )}
       </div>
 
       {/* Countdown Bars Container - displays bars side by side */}
@@ -260,31 +286,55 @@ const PitlaneHelperDisplay = ({
         minWidth: '150px',
       }}
     >
-      {/* Speed Delta */}
-      <div
-        className={[
-          'flex flex-col items-center p-2 rounded transition-all',
-          speed.isSeverelyOver
-            ? 'bg-red-600 animate-pulse'
-            : speed.isSpeeding
-              ? 'bg-red-600/50'
-              : '',
-        ].join(' ')}
-      >
+      {/* Speed Display - combines numeric delta, optional vertical bar, and optional position bar */}
+      <div className="flex gap-2 items-stretch">
+        {/* Numeric Speed Delta */}
         <div
           className={[
-            'text-2xl font-bold transition-colors',
-            speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
+            'flex flex-col items-center p-2 rounded transition-all flex-1',
+            speed.isSeverelyOver
+              ? 'bg-red-600 animate-pulse'
+              : speed.isSpeeding
+                ? 'bg-red-600/50'
+                : '',
           ].join(' ')}
         >
-          {speed.deltaKph > 0 ? '+' : ''}
-          {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
+          <div
+            className={[
+              'text-2xl font-bold transition-colors',
+              speed.isSeverelyOver || speed.isSpeeding ? 'text-white' : speed.colorClass,
+            ].join(' ')}
+          >
+            {speed.deltaKph > 0 ? '+' : ''}
+            {displayKph ? speed.deltaKph.toFixed(1) : speed.deltaMph.toFixed(1)}{' '}
+            {displayKph ? 'km/h' : 'mph'}
+          </div>
+          <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
+            Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
+            {displayKph ? 'km/h' : 'mph'}
+          </div>
         </div>
-        <div className={speed.isSpeeding ? 'text-xs text-white/80' : 'text-xs text-slate-400'}>
-          Limit: {displayKph ? speed.limitKph.toFixed(0) : speed.limitMph.toFixed(0)}{' '}
-          {displayKph ? 'km/h' : 'mph'}
-        </div>
+
+        {/* Optional Vertical Speed Bar */}
+        {config.showSpeedBar && (
+          <PitSpeedBar
+            currentSpeed={displayKph ? speed.speedKph : speed.speedMph}
+            limitSpeed={displayKph ? speed.limitKph : speed.limitMph}
+            unit={displayKph ? 'km/h' : 'mph'}
+            isSpeeding={speed.isSpeeding}
+            isSeverelyOver={speed.isSeverelyOver}
+          />
+        )}
+
+        {/* Optional Pitbox Position Bar - only shown when on pit road */}
+        {config.showPositionBar && onPitRoad && (
+          <PitboxPositionBar
+            distanceToPit={position.distanceToPit}
+            outerThreshold={config.positionBarOuterThreshold}
+            innerThreshold={config.positionBarInnerThreshold}
+            targetZone={config.positionBarTargetZone}
+          />
+        )}
       </div>
 
       {/* Pit Entry Countdown (when approaching but not yet on pit road) */}

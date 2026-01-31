@@ -50,6 +50,11 @@ export interface PitlaneHelperSettings {
   enableEarlyPitboxWarning: boolean;
   earlyPitboxThreshold: number;
   showPitlaneTraffic: boolean;
+  showSpeedBar: boolean;
+  showPositionBar: boolean;
+  positionBarOuterThreshold: number;
+  positionBarInnerThreshold: number;
+  positionBarTargetZone: number;
   background: { opacity: number };
 }
 

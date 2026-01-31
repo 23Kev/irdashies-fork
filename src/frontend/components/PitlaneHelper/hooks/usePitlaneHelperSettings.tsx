@@ -15,6 +15,11 @@ export const usePitlaneHelperSettings = () => {
     enableEarlyPitboxWarning: true,
     earlyPitboxThreshold: 75,
     showPitlaneTraffic: true,
+    showSpeedBar: false,
+    showPositionBar: false,
+    positionBarOuterThreshold: 80,
+    positionBarInnerThreshold: 20,
+    positionBarTargetZone: 5,
     background: { opacity: 80 },
     progressBarOrientation: 'horizontal' as const,
     showPitExitInputs: false,
@@ -32,6 +37,11 @@ export const usePitlaneHelperSettings = () => {
     showPitExitInputs: config.showPitExitInputs ?? false,
     pitExitInputs: config.pitExitInputs ?? { throttle: true, clutch: true },
     showInputsPhase: config.showInputsPhase ?? 'afterPitbox' as const,
+    showSpeedBar: config.showSpeedBar ?? false,
+    showPositionBar: config.showPositionBar ?? false,
+    positionBarOuterThreshold: config.positionBarOuterThreshold ?? 80,
+    positionBarInnerThreshold: config.positionBarInnerThreshold ?? 20,
+    positionBarTargetZone: config.positionBarTargetZone ?? 5,
   };
 
   return migratedConfig;

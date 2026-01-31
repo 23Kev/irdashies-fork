@@ -13,6 +13,11 @@ const defaultConfig: PitlaneHelperWidgetSettings['config'] = {
   enableEarlyPitboxWarning: true,
   earlyPitboxThreshold: 75,
   showPitlaneTraffic: true,
+  showSpeedBar: false,
+  showPositionBar: false,
+  positionBarOuterThreshold: 80,
+  positionBarInnerThreshold: 20,
+  positionBarTargetZone: 5,
   background: { opacity: 80 },
   progressBarOrientation: 'horizontal',
   showPitExitInputs: false,
@@ -37,6 +42,11 @@ export const PitlaneHelperSettings = () => {
     showPitExitInputs: savedSettings.config.showPitExitInputs ?? defaultConfig.showPitExitInputs,
     pitExitInputs: savedSettings.config.pitExitInputs ?? defaultConfig.pitExitInputs,
     showInputsPhase: savedSettings.config.showInputsPhase ?? defaultConfig.showInputsPhase,
+    showSpeedBar: savedSettings.config.showSpeedBar ?? defaultConfig.showSpeedBar,
+    showPositionBar: savedSettings.config.showPositionBar ?? defaultConfig.showPositionBar,
+    positionBarOuterThreshold: savedSettings.config.positionBarOuterThreshold ?? defaultConfig.positionBarOuterThreshold,
+    positionBarInnerThreshold: savedSettings.config.positionBarInnerThreshold ?? defaultConfig.positionBarInnerThreshold,
+    positionBarTargetZone: savedSettings.config.positionBarTargetZone ?? defaultConfig.positionBarTargetZone,
   } : defaultConfig;
 
   const [settings, setSettings] = useState<PitlaneHelperWidgetSettings>({
@@ -176,6 +186,96 @@ export const PitlaneHelperSettings = () => {
           <div className="space-y-4">
             <h3 className="text-lg font-medium text-slate-200">Display</h3>
             <div className="space-y-3 pl-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-slate-300">Show Speed Bar</span>
+                  <p className="text-xs text-slate-400">Vertical bar showing speed relative to limit</p>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.config.showSpeedBar}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ showSpeedBar: enabled })
+                  }
+                />
+              </div>
+
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm text-slate-300">Show Pitbox Position Bar</span>
+                  <p className="text-xs text-slate-400">Dual vertical bar showing distance to pitbox</p>
+                </div>
+                <ToggleSwitch
+                  enabled={settings.config.showPositionBar}
+                  onToggle={(enabled) =>
+                    handleConfigChange({ showPositionBar: enabled })
+                  }
+                />
+              </div>
+
+              {settings.config.showPositionBar && (
+                <>
+                  <div className="flex items-center justify-between pl-4">
+                    <span className="text-sm text-slate-300">Outer Bar Range</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="50"
+                        max="150"
+                        step="5"
+                        value={settings.config.positionBarOuterThreshold}
+                        onChange={(e) =>
+                          handleConfigChange({ positionBarOuterThreshold: parseInt(e.target.value) })
+                        }
+                        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-400 w-12">
+                        {settings.config.positionBarOuterThreshold}m
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pl-4">
+                    <span className="text-sm text-slate-300">Inner Bar Range</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="10"
+                        max="50"
+                        step="5"
+                        value={settings.config.positionBarInnerThreshold}
+                        onChange={(e) =>
+                          handleConfigChange({ positionBarInnerThreshold: parseInt(e.target.value) })
+                        }
+                        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-400 w-12">
+                        {settings.config.positionBarInnerThreshold}m
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between pl-4">
+                    <span className="text-sm text-slate-300">Target Zone Size</span>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="range"
+                        min="2"
+                        max="10"
+                        step="1"
+                        value={settings.config.positionBarTargetZone}
+                        onChange={(e) =>
+                          handleConfigChange({ positionBarTargetZone: parseInt(e.target.value) })
+                        }
+                        className="w-24 h-2 bg-slate-600 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <span className="text-xs text-slate-400 w-12">
+                        {settings.config.positionBarTargetZone}m
+                      </span>
+                    </div>
+                  </div>
+                </>
+              )}
+
               <div className="flex items-center justify-between">
                 <span className="text-sm text-slate-300">Progress Bar Orientation</span>
                 <div className="flex gap-2">

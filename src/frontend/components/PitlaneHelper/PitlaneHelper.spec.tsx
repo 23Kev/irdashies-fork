@@ -54,6 +54,11 @@ describe('PitlaneHelper', () => {
     enablePitLimiterWarning: true,
     enableEarlyPitboxWarning: true,
     showPitlaneTraffic: true,
+    showSpeedBar: false,
+    showPositionBar: false,
+    positionBarOuterThreshold: 80,
+    positionBarInnerThreshold: 20,
+    positionBarTargetZone: 5,
   };
 
   const defaultSpeedResult = {
