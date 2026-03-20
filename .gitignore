@@ -109,7 +109,6 @@ LAP_TIME_DELTA_BUG_ANALYSIS.md
 .vs/
 docs/pitlane-helper-design.md
 PITLANE_DETECTION_FIXES.md
-
 # claude
 .claude/settings.local.json
 .claude/worktrees
@@ -121,3 +120,4 @@ storybook-static/
 site/dist/
 site/node_modules/
 .gstack/
+.worktrees/
