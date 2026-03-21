@@ -23,6 +23,7 @@ import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { KeybindingsSettings } from './sections/KeybindingsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { InformationBarSettings } from './sections/InformationBarSettings';
+import { GantrySettings } from './sections/GantrySettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 
@@ -85,6 +86,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <InformationBarSettings />;
     case 'slowcarahead':
       return <SlowCarAheadSettings />;
+    case 'gantry':
+      return <GantrySettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
