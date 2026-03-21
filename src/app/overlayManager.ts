@@ -34,6 +34,7 @@ export class OverlayManager {
   private currentDashboard: DashboardLayout | undefined;
   private isLocked = true;
   private isQuitting = false;
+  private hasInteractiveWidgets = false;
   private skipTaskbar = true;
   private overlayAlwaysOnTop = true;
   private hasSingleInstanceLock = false;
@@ -104,7 +105,7 @@ export class OverlayManager {
     // Always create a window for the primary display (fallback for unmatched widgets)
     displaysWithWidgets.add(primaryDisplay.id);
 
-    const hasInteractiveWidgets = dashboardLayout.widgets.some(
+    this.hasInteractiveWidgets = dashboardLayout.widgets.some(
       (w) => w.enabled && w.config?.interactive === true
     );
 
@@ -116,7 +117,11 @@ export class OverlayManager {
         continue;
       }
       const isPrimary = display.id === primaryDisplay.id;
-      this.createWindowForDisplay(display, isPrimary, hasInteractiveWidgets);
+      this.createWindowForDisplay(
+        display,
+        isPrimary,
+        this.hasInteractiveWidgets
+      );
     }
 
     this.createSettingsWindow();
@@ -453,11 +458,19 @@ export class OverlayManager {
 
     for (const win of this.displayWindows.values()) {
       if (win.isDestroyed()) continue;
-      win.setIgnoreMouseEvents(this.isLocked);
-      win.webContents.send('editModeToggled', !this.isLocked);
-      if (!this.isLocked) {
+      if (this.isLocked) {
+        // Restore correct mouse state after exiting edit mode
+        if (this.hasInteractiveWidgets) {
+          win.setIgnoreMouseEvents(false);
+        } else {
+          win.setIgnoreMouseEvents(true, { forward: true });
+        }
+      } else {
+        // Entering edit mode: allow mouse events for drag-to-position
+        win.setIgnoreMouseEvents(false);
         win.focus();
       }
+      win.webContents.send('editModeToggled', !this.isLocked);
     }
 
     if (this.isLocked) {
@@ -607,7 +620,11 @@ export class OverlayManager {
       const existing = this.displayWindows.get(display.id);
       if (existing && !existing.isDestroyed()) continue;
       const isPrimary = display.id === primaryDisplay.id;
-      this.createWindowForDisplay(display, isPrimary);
+      this.createWindowForDisplay(
+        display,
+        isPrimary,
+        this.hasInteractiveWidgets
+      );
     }
 
     // Shrink-wrap windows when not in edit mode
@@ -630,7 +647,11 @@ export class OverlayManager {
       const primaryDisplay = screen.getPrimaryDisplay();
       for (const display of allDisplays) {
         const isPrimary = display.id === primaryDisplay.id;
-        this.createWindowForDisplay(display, isPrimary);
+        this.createWindowForDisplay(
+          display,
+          isPrimary,
+          this.hasInteractiveWidgets
+        );
       }
     }
   }
@@ -647,7 +668,11 @@ export class OverlayManager {
       const primaryDisplay = screen.getPrimaryDisplay();
       for (const display of allDisplays) {
         const isPrimary = display.id === primaryDisplay.id;
-        this.createWindowForDisplay(display, isPrimary);
+        this.createWindowForDisplay(
+          display,
+          isPrimary,
+          this.hasInteractiveWidgets
+        );
       }
     }
   }
