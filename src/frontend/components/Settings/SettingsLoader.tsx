@@ -23,6 +23,7 @@ import { DriverTagsSettings } from './sections/DriverTagsSettings';
 import { KeybindingsSettings } from './sections/KeybindingsSettings';
 import { LapTimeLogSettings } from './sections/LapTimeLogSettings';
 import { InformationBarSettings } from './sections/InformationBarSettings';
+import { GantrySettings } from './sections/GantrySettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
@@ -88,6 +89,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <SlowCarAheadSettings />;
     case 'sectordelta':
       return <SectorDeltaSettings />;
+    case 'gantry':
+      return <GantrySettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
