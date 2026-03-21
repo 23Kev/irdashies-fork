@@ -565,6 +565,26 @@ export interface SectorDeltaConfig {
   alwaysScroll?: boolean;
 }
 
+export type SessionRetention = 'all' | 5 | 10 | 20;
+
+export interface GantryConfig {
+  // Incident detection thresholds
+  slowSpeedThreshold: number;
+  slowFrameThreshold: number;
+  suddenStopFromSpeed: number;
+  suddenStopToSpeed: number;
+  suddenStopFrames: number;
+  offTrackDebounce: number;
+  cooldownSeconds: number;
+  // Persistence
+  sessionRetention: SessionRetention;
+  // Required for mouse interaction
+  interactive: true;
+}
+
+export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
+
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -596,6 +616,7 @@ export interface WidgetConfigMap {
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
+  gantry: GantryConfig;
 }
 
 export type TypedDashboardWidget<
