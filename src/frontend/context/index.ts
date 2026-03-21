@@ -15,6 +15,7 @@ export { useReferenceLapStore } from './ReferenceLapStore/ReferenceLapStore';
 export * from './LapTimesStore/LapTimesStore';
 export * from './LapTimesStore/LapTimesStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
+export * from './RaceControlStore';
 export * from './shared';
 export * from './DriverStatsStore/DriverStatsStore';
 export * from './DriverStatsStore/DriverStatsStoreUpdater';
