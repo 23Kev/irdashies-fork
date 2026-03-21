@@ -14,6 +14,9 @@ import type {
   ReferenceLapBridge,
   KeybindingsBridge,
   KeybindingActionId,
+  RaceControlBridge,
+  Incident,
+  IncidentThresholds,
 } from '@irdashies/types';
 
 export function exposeBridge() {
@@ -44,6 +47,10 @@ export function exposeBridge() {
       ipcRenderer.removeAllListeners('sessionData');
       ipcRenderer.removeAllListeners('runningState');
     },
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    changeCameraNumber: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    changeReplayPosition: () => {},
   } as IrSdkBridge);
 
   contextBridge.exposeInMainWorld('dashboardBridge', {
@@ -238,4 +245,21 @@ export function exposeBridge() {
     startRecording: () => ipcRenderer.invoke('keybindings:startRecording'),
     stopRecording: () => ipcRenderer.invoke('keybindings:stopRecording'),
   } as KeybindingsBridge);
+
+  contextBridge.exposeInMainWorld('raceControlBridge', {
+    getIncidents: () => ipcRenderer.invoke('raceControl:getIncidents'),
+    onIncident: (cb: (incident: Incident) => void) => {
+      const handler = (_: Electron.IpcRendererEvent, incident: Incident) =>
+        cb(incident);
+      ipcRenderer.on('raceControl:incident', handler);
+      return () => ipcRenderer.removeListener('raceControl:incident', handler);
+    },
+    replayIncident: (incident: Incident, seconds: number) =>
+      ipcRenderer.invoke('raceControl:replayIncident', incident, seconds),
+    clearIncidents: () => ipcRenderer.invoke('raceControl:clearIncidents'),
+    updateThresholds: (thresholds: IncidentThresholds) =>
+      ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
+    updateRetention: (retention: 'all' | 5 | 10 | 20) =>
+      ipcRenderer.invoke('raceControl:updateRetention', retention),
+  } as RaceControlBridge);
 }

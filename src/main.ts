@@ -24,6 +24,7 @@ import { Analytics } from './app/analytics';
 import { setupReferenceLapsBridge } from './app/bridge/referenceLapsBridge';
 import { setupKeybindingsBridge } from './app/bridge/keybindingsBridge';
 import { setupLogBridge } from './app/bridge/logBridge';
+import { setupRaceControlBridge } from './app/bridge/raceControlBridge';
 
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (started) app.quit();
@@ -55,6 +56,7 @@ app.on('ready', async () => {
   setupFuelCalculatorBridge();
   setupPitLaneBridge();
   setupReferenceLapsBridge();
+  setupRaceControlBridge();
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);
