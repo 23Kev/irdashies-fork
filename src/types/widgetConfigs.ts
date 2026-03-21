@@ -502,6 +502,26 @@ export interface SlowCarAheadConfig {
   sessionVisibility: SessionVisibilitySettings;
 }
 
+export type SessionRetention = 'all' | 5 | 10 | 20;
+
+export interface GantryConfig {
+  // Incident detection thresholds
+  slowSpeedThreshold: number;
+  slowFrameThreshold: number;
+  suddenStopFromSpeed: number;
+  suddenStopToSpeed: number;
+  suddenStopFrames: number;
+  offTrackDebounce: number;
+  cooldownSeconds: number;
+  // Persistence
+  sessionRetention: SessionRetention;
+  // Required for mouse interaction
+  interactive: true;
+}
+
+export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
+
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -532,6 +552,7 @@ export interface WidgetConfigMap {
   laptimelog: LapTimeLogConfig;
   infobar: InformationBarConfig;
   slowcarahead: SlowCarAheadConfig;
+  gantry: GantryConfig;
 }
 
 export type TypedDashboardWidget<
