@@ -22,6 +22,7 @@ export const WIDGET_NAMES: Record<WidgetId, string> = {
   flag: 'Flag',
   twitchchat: 'Twitch Chat',
   laptimelog: 'Lap Timer',
+  gantry: 'The Gantry',
 };
 
 /**
