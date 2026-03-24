@@ -121,3 +121,4 @@ site/dist/
 site/node_modules/
 
 .worktrees/
+.superpowers/
