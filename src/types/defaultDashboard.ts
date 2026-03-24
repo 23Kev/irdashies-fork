@@ -1100,7 +1100,7 @@ export const defaultDashboard: {
     },
     {
       id: 'gantry',
-      enabled: true,
+      enabled: false,
       layout: {
         x: 0,
         y: 0,
@@ -1116,7 +1116,6 @@ export const defaultDashboard: {
         offTrackDebounce: 3,
         cooldownSeconds: 5,
         sessionRetention: 'all',
-        interactive: true,
       },
     },
     {

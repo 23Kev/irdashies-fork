@@ -578,8 +578,6 @@ export interface GantryConfig {
   cooldownSeconds: number;
   // Persistence
   sessionRetention: SessionRetention;
-  // Required for mouse interaction
-  interactive: true;
 }
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
