@@ -583,6 +583,19 @@ export interface GantryConfig {
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
 
+export interface BattleConfig {
+  background: { opacity: number };
+  showOnlyWhenOnTrack: boolean;
+  position: { enabled: boolean };
+  carNumber: { enabled: boolean };
+  driverName: { enabled: boolean };
+  stint: { enabled: boolean };
+  lastTime: { enabled: boolean; timeFormat: TimeFormat };
+  gap: { enabled: boolean; decimalPlaces: number };
+  displayOrder: string[];
+  sessionVisibility: SessionVisibilitySettings;
+}
+
 // ===========================
 // Widget config map + typed widget
 // ===========================
@@ -615,6 +628,7 @@ export interface WidgetConfigMap {
   slowcarahead: SlowCarAheadConfig;
   sectordelta: SectorDeltaConfig;
   gantry: GantryConfig;
+  battle: BattleConfig;
 }
 
 export type TypedDashboardWidget<
@@ -711,3 +725,4 @@ export type InformationBarWidgetSettings =
   BaseWidgetSettings<InformationBarConfig>;
 export type SlowCarAheadWidgetSettings = BaseWidgetSettings<SlowCarAheadConfig>;
 export type SectorDeltaWidgetSettings = BaseWidgetSettings<SectorDeltaConfig>;
+export type BattleWidgetSettings = BaseWidgetSettings<BattleConfig>;

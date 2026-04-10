@@ -19,6 +19,7 @@ import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
 import { Gantry } from './components/Gantry/Gantry';
+import { Battle } from './components/Battle/Battle';
 
 export {
   Standings,
@@ -42,6 +43,7 @@ export {
   SlowCarAhead,
   SectorDelta,
   Gantry,
+  Battle,
 };
 
 // TODO: type this better, right now the config comes from settings
@@ -72,6 +74,7 @@ export const WIDGET_MAP: Record<
   slowcarahead: SlowCarAhead,
   sectordelta: SectorDelta,
   gantry: Gantry,
+  battle: Battle,
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;

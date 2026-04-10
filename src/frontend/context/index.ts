@@ -17,6 +17,8 @@ export * from './LapTimesStore/LapTimesStoreUpdater';
 export * from './SectorTimingStore/SectorTimingStore';
 export * from './LapGapStore';
 export * from './RaceControlStore';
+export * from './BattleGapStore/BattleGapStore';
+export * from './BattleGapStore/BattleGapStoreUpdater';
 export * from './shared';
 export * from './DriverStatsStore/DriverStatsStore';
 export * from './DriverStatsStore/DriverStatsStoreUpdater';

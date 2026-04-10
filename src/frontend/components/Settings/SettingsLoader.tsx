@@ -27,6 +27,7 @@ import { GantrySettings } from './sections/GantrySettings';
 import { useDashboard } from '@irdashies/context';
 import { SlowCarAheadSettings } from './sections/SlowCarAheadSettings';
 import { SectorDeltaSettings } from './sections/SectorDeltaSettings';
+import { BattleSettings } from './sections/BattleSettings';
 
 interface SettingsLoaderProps {
   previewMode?: boolean;
@@ -91,6 +92,8 @@ export const SettingsLoader = ({ previewMode }: SettingsLoaderProps = {}) => {
       return <SectorDeltaSettings />;
     case 'gantry':
       return <GantrySettings />;
+    case 'battle':
+      return <BattleSettings />;
     default:
       return widget ? (
         <div className="text-red-400">No settings available for {type}</div>
