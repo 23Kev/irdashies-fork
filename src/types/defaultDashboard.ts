@@ -1058,6 +1058,7 @@ export const defaultDashboard: {
         driverName: { enabled: true },
         stint: { enabled: true },
         lastTime: { enabled: true, timeFormat: 'mixed' },
+        speed: { enabled: false, unit: 'auto' },
         gap: { enabled: true, decimalPlaces: 2 },
         displayOrder: [
           'position',
@@ -1065,6 +1066,7 @@ export const defaultDashboard: {
           'driverName',
           'stint',
           'lastTime',
+          'speed',
           'gap',
         ],
         sessionVisibility: {
