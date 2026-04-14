@@ -96,6 +96,7 @@ export const setupRaceControlBridge = () => {
         const snap = {
           sessionTime: telemetry.SessionTime?.value?.[0] ?? 0,
           sessionNum: telemetry.SessionNum?.value?.[0] ?? 0,
+          sessionState: telemetry.SessionState?.value?.[0] ?? 0,
           replayFrameNum: telemetry.ReplayFrameNum?.value?.[0] ?? 0,
           carIdxLapDistPct: telemetry.CarIdxLapDistPct?.value ?? [],
           carIdxLap: telemetry.CarIdxLap?.value ?? [],

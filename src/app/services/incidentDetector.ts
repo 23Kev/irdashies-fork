@@ -5,12 +5,13 @@ import type {
   IncidentDebugSnapshot,
 } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
-import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
+import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
 import logger from '../logger';
 
 interface TelemetrySnapshot {
   sessionTime: number;
   sessionNum: number;
+  sessionState: number;
   replayFrameNum: number;
   carIdxLapDistPct: number[];
   carIdxLap: number[];
@@ -395,7 +396,8 @@ export class IncidentDetector {
       // --- Sustained slow crash ---
       const isOnTrack = surface === TrackLocation.OnTrack;
       const isOnPitRoad = onPitRoad;
-      if (isOnTrack && !isOnPitRoad) {
+      const isRacing = snap.sessionState === SessionState.Racing;
+      if (isOnTrack && !isOnPitRoad && isRacing) {
         if (state.currentAvgSpeed < this.thresholds.slowSpeedThreshold) {
           state.slowFrameCount++;
           if (
@@ -420,6 +422,10 @@ export class IncidentDetector {
         } else {
           state.slowFrameCount = 0;
         }
+      } else {
+        // Not racing (formation/pace laps) or on pit road — drain counter so
+        // it doesn't carry over and fire immediately once the session goes green.
+        state.slowFrameCount = 0;
       }
 
       // --- Sudden stop ---
