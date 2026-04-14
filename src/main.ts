@@ -57,6 +57,9 @@ app.on('ready', async () => {
   setupPitLaneBridge();
   setupReferenceLapsBridge();
   setupRaceControlBridge();
+  ipcMain.handle('raceControl:showGantryWindow', () => {
+    overlayManager.createGantryWindow(getOrCreateDefaultDashboard());
+  });
 
   // Start component server for browser components
   await startComponentServer(bridge, dashboardBridge);
