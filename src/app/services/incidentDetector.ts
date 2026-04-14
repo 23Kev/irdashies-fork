@@ -33,6 +33,8 @@ export class IncidentDetector {
     number,
     IncidentDebugSnapshot['frameHistory']
   >();
+  private lastSubSessionId: string | null = null;
+  private lastSessionNum: number | null = null;
 
   constructor(
     private thresholds: IncidentThresholds,
@@ -45,22 +47,47 @@ export class IncidentDetector {
     this.thresholds = thresholds;
   }
 
-  updateSession(session: {
-    DriverInfo?: {
-      Drivers?: {
-        CarIdx: number;
-        UserName: string;
-        CarNumber: string;
-        TeamName: string;
-        CarIsPaceCar: number;
-      }[];
-    };
-  }) {
-    const prevCarStates = this.carStates.size;
+  updateSession(
+    session: {
+      WeekendInfo?: {
+        SubSessionID?: number | string;
+      };
+      SessionInfo?: {
+        Sessions?: { SessionNum?: number; SessionType?: string }[];
+      };
+      DriverInfo?: {
+        Drivers?: {
+          CarIdx: number;
+          UserName: string;
+          CarNumber: string;
+          TeamName: string;
+          CarIsPaceCar: number;
+        }[];
+      };
+    },
+    sessionNum?: number
+  ) {
+    const subSessionId =
+      session.WeekendInfo?.SubSessionID != null
+        ? String(session.WeekendInfo.SubSessionID)
+        : null;
+    const effectiveSessionNum = sessionNum ?? null;
+
+    const sessionChanged =
+      this.lastSubSessionId !== null &&
+      subSessionId !== null &&
+      this.lastSubSessionId !== subSessionId;
+    const phaseChanged =
+      this.lastSessionNum !== null &&
+      effectiveSessionNum !== null &&
+      this.lastSessionNum !== effectiveSessionNum;
+    const isFirstUpdate =
+      this.lastSubSessionId === null && this.lastSessionNum === null;
+    const shouldReset = sessionChanged || phaseChanged || isFirstUpdate;
+
+    // Always refresh driver map (cheap; handles late joiners / roster changes)
     const prevDrivers = this.sessionDrivers.size;
-    this.carStates.clear();
     this.sessionDrivers.clear();
-    this.frameBuffers.clear();
     session.DriverInfo?.Drivers?.forEach((d) => {
       this.sessionDrivers.set(d.CarIdx, {
         name: d.UserName,
@@ -69,9 +96,37 @@ export class IncidentDetector {
         isPaceCar: d.CarIsPaceCar === 1,
       });
     });
-    logger.info(
-      `[IncidentDetector] updateSession: cleared ${prevCarStates} carStates, ${prevDrivers} drivers; loaded ${this.sessionDrivers.size} drivers`
-    );
+
+    if (shouldReset) {
+      const prevCarStates = this.carStates.size;
+      this.carStates.clear();
+      this.frameBuffers.clear();
+
+      const phaseName =
+        effectiveSessionNum != null
+          ? (session.SessionInfo?.Sessions?.find(
+              (s) => s.SessionNum === effectiveSessionNum
+            )?.SessionType ?? 'unknown')
+          : 'unknown';
+
+      if (isFirstUpdate) {
+        logger.info(
+          `[IncidentDetector] updateSession: initial load subSession=${subSessionId ?? '(none)'} sessionNum=${effectiveSessionNum ?? '(none)'} (${phaseName}); ${prevDrivers}→${this.sessionDrivers.size} drivers`
+        );
+      } else {
+        logger.info(
+          `[IncidentDetector] updateSession: RESET ${this.lastSubSessionId ?? '(none)'}/${this.lastSessionNum ?? '(none)'} → ${subSessionId ?? '(none)'}/${effectiveSessionNum ?? '(none)'} (${phaseName}); cleared ${prevCarStates} carStates; ${prevDrivers}→${this.sessionDrivers.size} drivers`
+        );
+      }
+
+      this.lastSubSessionId = subSessionId;
+      this.lastSessionNum = effectiveSessionNum;
+    } else {
+      // Re-publish with no real change — preserve carStates/frameBuffers
+      logger.debug(
+        `[IncidentDetector] updateSession: refresh (no change) subSession=${subSessionId ?? '(none)'} sessionNum=${effectiveSessionNum ?? '(none)'}; ${prevDrivers}→${this.sessionDrivers.size} drivers`
+      );
+    }
   }
 
   /** Exposed for testing. Returns speed in km/h. Returns 0 for backwards movement. */
@@ -108,6 +163,7 @@ export class IncidentDetector {
         slowFrameCount: 0,
         offTrackFrameCount: 0,
         lastIncidentTime: {} as Record<string, number>,
+        hasPrevFrame: false,
       });
     }
     const state = this.carStates.get(carIdx);
@@ -199,9 +255,21 @@ export class IncidentDetector {
 
       const state = this.getOrCreateState(carIdx);
       const surface = snap.carIdxTrackSurface[carIdx] ?? TrackLocation.OnTrack;
+      const onPitRoad = snap.carIdxOnPitRoad[carIdx] ?? false;
+
+      // First frame: seed prev* state and skip detection to avoid garbage
+      // speed derived from zeroed prevLapDistPct/prevSessionTime.
+      if (!state.hasPrevFrame) {
+        state.prevOnPitRoad = onPitRoad;
+        state.prevLapDistPct = snap.carIdxLapDistPct[carIdx] ?? 0;
+        state.prevSessionTime = snap.sessionTime;
+        state.prevTrackSurface = surface;
+        state.prevSessionFlags = snap.carIdxSessionFlags[carIdx] ?? 0;
+        state.hasPrevFrame = true;
+        continue;
+      }
 
       // --- Pit entry ---
-      const onPitRoad = snap.carIdxOnPitRoad[carIdx] ?? false;
       if (
         onPitRoad &&
         !state.prevOnPitRoad &&

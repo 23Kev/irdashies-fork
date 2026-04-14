@@ -73,6 +73,7 @@ export interface CarIncidentState {
   slowFrameCount: number;
   offTrackFrameCount: number;
   lastIncidentTime: Record<string, number>;
+  hasPrevFrame: boolean;
 }
 
 export interface RaceControlBridge {
