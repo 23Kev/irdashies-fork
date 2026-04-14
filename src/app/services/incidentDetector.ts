@@ -6,6 +6,7 @@ import type {
 } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
 import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
+import logger from '../logger';
 
 interface TelemetrySnapshot {
   sessionTime: number;
@@ -55,6 +56,8 @@ export class IncidentDetector {
       }[];
     };
   }) {
+    const prevCarStates = this.carStates.size;
+    const prevDrivers = this.sessionDrivers.size;
     this.carStates.clear();
     this.sessionDrivers.clear();
     this.frameBuffers.clear();
@@ -66,6 +69,9 @@ export class IncidentDetector {
         isPaceCar: d.CarIsPaceCar === 1,
       });
     });
+    logger.info(
+      `[IncidentDetector] updateSession: cleared ${prevCarStates} carStates, ${prevDrivers} drivers; loaded ${this.sessionDrivers.size} drivers`
+    );
   }
 
   /** Exposed for testing. Returns speed in km/h. Returns 0 for backwards movement. */
@@ -388,13 +394,16 @@ export class IncidentDetector {
 
     const ptMs = performance.now() - ptStart;
     if (ptMs > 10) {
-      console.log(
-        `[processTelemetry] ${ptMs.toFixed(1)}ms total | ${emitCount} emits (${emitMs.toFixed(1)}ms in listeners) | loop=${(ptMs - emitMs).toFixed(1)}ms`
+      logger.debug(
+        `[IncidentDetector] processTelemetry ${ptMs.toFixed(1)}ms total | ${emitCount} emits (${emitMs.toFixed(1)}ms in listeners) | loop=${(ptMs - emitMs).toFixed(1)}ms`
       );
     }
   }
 
   private emit(incident: Incident) {
+    logger.info(
+      `[IncidentDetector] emit type=${incident.type} car=${incident.carIdx} lap=${incident.lapNum} lapDistPct=${incident.lapDistPct.toFixed(3)} sessionTime=${incident.sessionTime.toFixed(2)}${incident.debug ? ` trigger=${incident.debug.trigger} evidence="${incident.debug.evidence}"` : ''}`
+    );
     this.listeners.forEach((cb) => cb(incident));
   }
 }

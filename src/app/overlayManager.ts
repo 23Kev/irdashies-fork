@@ -495,7 +495,7 @@ export class OverlayManager {
         this.gantryWindow.webContents.send(key, value);
         this.trackIpcTime(`gantry:${key}`, performance.now() - t0);
       } catch (e) {
-        console.error(`Failed to send message ${key} to gantry window`, e);
+        logger.error(`Failed to send message ${key} to gantry window`, e);
       }
     }
 
