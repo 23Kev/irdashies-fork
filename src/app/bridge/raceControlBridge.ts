@@ -33,6 +33,8 @@ export const setupRaceControlBridge = () => {
   const detector = new IncidentDetector(defaultThresholds, isDev);
   let cachedTrackLengthM = 0;
   let currentSessionId = '';
+  let currentSessionNum: number | null = null;
+  let lastSession: Parameters<typeof detector.updateSession>[0] | null = null;
   let retention: 'all' | 5 | 10 | 20 = 'all';
 
   const broadcast = (incident: Incident) => {
@@ -64,7 +66,8 @@ export const setupRaceControlBridge = () => {
 
     unsubscribeSession =
       bridge.onSessionData((session) => {
-        detector.updateSession(session);
+        lastSession = session;
+        detector.updateSession(session, currentSessionNum ?? undefined);
         const trackLen = session?.WeekendInfo?.TrackLength;
         if (trackLen) {
           const parsed = parseTrackLengthM(trackLen);
@@ -100,6 +103,21 @@ export const setupRaceControlBridge = () => {
           carIdxSessionFlags: telemetry.CarIdxSessionFlags?.value ?? [],
           carIdxOnPitRoad: telemetry.CarIdxOnPitRoad?.value ?? [],
         };
+
+        // Detect session-phase change (e.g. Practice → Qualify → Race within
+        // the same SubSessionID). When it changes, immediately re-run
+        // updateSession so detector resets cleanly before next tick.
+        if (snap.sessionNum !== currentSessionNum) {
+          const prev = currentSessionNum;
+          currentSessionNum = snap.sessionNum;
+          logger.info(
+            `[RaceControl] telemetry SessionNum changed: ${prev ?? '(none)'} -> ${snap.sessionNum}`
+          );
+          if (lastSession) {
+            detector.updateSession(lastSession, currentSessionNum);
+          }
+        }
+
         detector.processTelemetry(snap, cachedTrackLengthM);
       }) ?? undefined;
   };

@@ -62,13 +62,140 @@ describe('IncidentDetector - speed calculation', () => {
 });
 
 describe('session transitions', () => {
-  it('clears car states when session updates', () => {
+  const makeDrivers = () => ({
+    DriverInfo: {
+      Drivers: [
+        {
+          CarIdx: 0,
+          UserName: 'Test',
+          CarNumber: '99',
+          TeamName: '',
+          CarIsPaceCar: 0,
+        },
+      ],
+    },
+  });
+
+  it('clears car states on first updateSession (initial load)', () => {
     const detector = new IncidentDetector(defaultThresholds, false);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (detector as any).carStates.set(0, { slowFrameCount: 5 });
-    detector.updateSession({ DriverInfo: { Drivers: [] } });
+    detector.updateSession({
+      WeekendInfo: { SubSessionID: 111 },
+      ...makeDrivers(),
+    });
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     expect((detector as any).carStates.size).toBe(0);
+  });
+
+  it('PRESERVES car states when same session YAML is re-published (no change)', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    detector.updateSession(
+      { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
+      0
+    );
+    // Seed state via processTelemetry
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stateBefore = (detector as any).carStates.get(0);
+    expect(stateBefore).toBeDefined();
+
+    // Session YAML re-published with identical SubSessionID + SessionNum
+    detector.updateSession(
+      { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
+      0
+    );
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const stateAfter = (detector as any).carStates.get(0);
+    expect(stateAfter).toBe(stateBefore);
+    expect(stateAfter.hasPrevFrame).toBe(true);
+  });
+
+  it('RESETS car states when SessionNum changes (phase transition Practice → Race)', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    detector.updateSession(
+      { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
+      0 // Practice
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((detector as any).carStates.size).toBe(1);
+
+    // Phase change within same SubSessionID
+    detector.updateSession(
+      { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
+      2 // Race
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((detector as any).carStates.size).toBe(0);
+  });
+
+  it('RESETS car states when SubSessionID changes', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    detector.updateSession(
+      { WeekendInfo: { SubSessionID: 111 }, ...makeDrivers() },
+      0
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    detector.updateSession(
+      { WeekendInfo: { SubSessionID: 222 }, ...makeDrivers() },
+      0
+    );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    expect((detector as any).carStates.size).toBe(0);
+  });
+});
+
+describe('first-frame speed guard', () => {
+  it('does not emit sudden-stop crash on the first processed frame', () => {
+    const detector = new IncidentDetector(defaultThresholds, false);
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession(
+      {
+        WeekendInfo: { SubSessionID: 111 },
+        DriverInfo: {
+          Drivers: [
+            {
+              CarIdx: 0,
+              UserName: 'Test',
+              CarNumber: '99',
+              TeamName: '',
+              CarIsPaceCar: 0,
+            },
+          ],
+        },
+      },
+      0
+    );
+
+    // Repro of the live bug: prevLapDistPct=0, currLapDistPct=0.5 on a 5km
+    // track = 18,000 km/h "speed" on first frame, then real 0 km/h on next
+    // tick → previously fired false sudden-stop Crash.
+    detector.processTelemetry(
+      makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 }),
+      5000
+    );
+    // Subsequent stationary frames
+    for (let i = 1; i < 5; i++) {
+      detector.processTelemetry(
+        makeTelemetry({ carIdxLapDistPct: [0.5], sessionTime: 100 + i * 0.04 }),
+        5000
+      );
+    }
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      0
+    );
   });
 });
 
@@ -153,11 +280,20 @@ describe('off-track detection', () => {
       },
     });
 
+    // Seed frame (on-track) so detector has prev state before we count
+    // off-track frames for the debounce.
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxTrackSurface: [TrackLocation.OnTrack],
+        sessionTime: 100,
+      }),
+      5000
+    );
     for (let i = 0; i < 3; i++) {
       detector.processTelemetry(
         makeTelemetry({
           carIdxTrackSurface: [TrackLocation.OffTrack],
-          sessionTime: 100 + i * 0.04,
+          sessionTime: 100.04 + i * 0.04,
         }),
         5000
       );
@@ -188,14 +324,24 @@ describe('crash detection - sustained slow', () => {
       },
     });
 
+    // Seed frame first (establishes prev state; no detection runs).
+    detector.processTelemetry(
+      makeTelemetry({
+        carIdxTrackSurface: [TrackLocation.OnTrack],
+        carIdxOnPitRoad: [false],
+        carIdxLapDistPct: [0.5],
+        sessionTime: 100,
+      }),
+      5000
+    );
     // 3 frames barely moving (< 15 km/h threshold)
     for (let i = 0; i < 3; i++) {
       detector.processTelemetry(
         makeTelemetry({
           carIdxTrackSurface: [TrackLocation.OnTrack],
           carIdxOnPitRoad: [false],
-          carIdxLapDistPct: [0.5 + i * 0.00001], // barely moving
-          sessionTime: 100 + i * 0.04,
+          carIdxLapDistPct: [0.5 + (i + 1) * 0.00001], // barely moving
+          sessionTime: 100.04 + i * 0.04,
         }),
         5000
       );
