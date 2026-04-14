@@ -155,7 +155,7 @@ export const setupRaceControlBridge = () => {
       if (!bridge) return;
       const targetFrame =
         incident.replayFrameNum - Math.round(REPLAY_FPS * seconds);
-      bridge.changeCameraNumber(incident.carIdx, 0, 0);
+      bridge.changeCameraNumber(incident.carNumber, 0, 0);
       bridge.changeReplayPosition(
         ReplayPositionCommand.Begin,
         Math.max(0, targetFrame)

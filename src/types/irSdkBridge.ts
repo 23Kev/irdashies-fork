@@ -12,7 +12,11 @@ export interface IrSdkBridge {
     callback: (value: boolean) => void
   ) => (() => void) | undefined;
   stop: () => void;
-  changeCameraNumber: (driver: number, group: number, camera: number) => void;
+  changeCameraNumber: (
+    carNumber: string,
+    group: number,
+    camera: number
+  ) => void;
   changeReplayPosition: (
     position: ReplayPositionCommand,
     frame: number
