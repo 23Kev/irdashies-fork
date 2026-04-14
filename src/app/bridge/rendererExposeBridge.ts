@@ -261,5 +261,6 @@ export function exposeBridge() {
       ipcRenderer.invoke('raceControl:updateThresholds', thresholds),
     updateRetention: (retention: 'all' | 5 | 10 | 20) =>
       ipcRenderer.invoke('raceControl:updateRetention', retention),
+    showGantryWindow: () => ipcRenderer.invoke('raceControl:showGantryWindow'),
   } as RaceControlBridge);
 }

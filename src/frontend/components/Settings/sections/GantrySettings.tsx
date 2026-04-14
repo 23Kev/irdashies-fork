@@ -88,6 +88,21 @@ export const GantrySettings = memo(() => {
 
   return (
     <div className="flex flex-col gap-4">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm font-medium text-white">Gantry Window</p>
+          <p className="text-xs text-slate-400">
+            Show the Gantry window if it has been closed.
+          </p>
+        </div>
+        <button
+          onClick={() => window.raceControlBridge?.showGantryWindow()}
+          className="rounded bg-slate-600 px-3 py-1.5 text-xs text-white hover:bg-slate-500 active:bg-slate-700"
+        >
+          Show Window
+        </button>
+      </div>
+
       <BaseSettingsSection
         title="Incident Detection"
         description="Configure thresholds used to detect incidents on track."
