@@ -28,6 +28,21 @@ import { getSimStatus } from './utils';
 import { getSdkOrMock } from './get-sdk';
 import logger from '../../logger';
 
+/**
+ * Encode a car number string for use with irsdk_BroadcastCamSwitchNum.
+ * Mirrors the irsdk_padCarNum C function: numbers with N leading zeros are
+ * encoded as num + 1000 * (digitCount + N), so iRacing can distinguish
+ * "30" from "030" from "0030".
+ */
+function padCarNum(carNumber: string): number {
+  const num = parseInt(carNumber, 10);
+  if (isNaN(num)) return 0;
+  const leadingZeros = carNumber.match(/^(0+)/)?.[1].length ?? 0;
+  if (leadingZeros === 0) return num;
+  const numPlaces = (num > 99 ? 3 : num > 9 ? 2 : 1) + leadingZeros;
+  return num + 1000 * numPlaces;
+}
+
 function copyTelemData<
   K extends keyof TelemetryVarList = keyof TelemetryVarList,
   T extends TelemetryVarList[K] = TelemetryVarList[K],
@@ -371,15 +386,14 @@ export class IRacingSDK {
     );
   }
 
-  // @todo: needs to be padded
   public changeCameraNumber(
-    driver: number,
+    carNumber: string,
     group: number,
     camera: number
   ): void {
     this._sdk?.broadcast(
       BroadcastMessages.CameraSwitchNum,
-      driver,
+      padCarNum(carNumber),
       group,
       camera
     );
