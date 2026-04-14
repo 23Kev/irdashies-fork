@@ -3,7 +3,7 @@ import { IncidentDetector } from './incidentDetector';
 import type { IncidentThresholds } from '../../types/raceControl';
 import { IncidentType } from '../../types/raceControl';
 import type { Incident } from '../../types/raceControl';
-import { TrackLocation, GlobalFlags } from '../irsdk/types/enums';
+import { TrackLocation, GlobalFlags, SessionState } from '../irsdk/types/enums';
 
 const defaultThresholds: IncidentThresholds = {
   slowSpeedThreshold: 15,
@@ -19,6 +19,7 @@ const makeTelemetry = (
   overrides: Partial<{
     sessionTime: number;
     sessionNum: number;
+    sessionState: number;
     replayFrameNum: number;
     carIdxLapDistPct: number[];
     carIdxLap: number[];
@@ -29,6 +30,7 @@ const makeTelemetry = (
 ) => ({
   sessionTime: 100,
   sessionNum: 0,
+  sessionState: SessionState.Racing,
   replayFrameNum: 6000,
   carIdxLapDistPct: [0.5],
   carIdxLap: [3],
@@ -383,6 +385,113 @@ describe('crash detection - sustained slow', () => {
     }
     expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
       0
+    );
+  });
+
+  it('does not fire sustained-slow during formation/pace lap (pre-Racing state)', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // Seed frame
+    detector.processTelemetry(
+      makeTelemetry({
+        sessionState: SessionState.ParadeLaps,
+        carIdxLapDistPct: [0.5],
+        sessionTime: 100,
+      }),
+      5000
+    );
+    // 3 stationary frames — would fire if sessionState were Racing
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          sessionState: SessionState.ParadeLaps,
+          carIdxTrackSurface: [TrackLocation.OnTrack],
+          carIdxOnPitRoad: [false],
+          carIdxLapDistPct: [0.5 + (i + 1) * 0.00001],
+          sessionTime: 100.04 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      0
+    );
+  });
+
+  it('fires sustained-slow once session transitions to Racing', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, slowFrameThreshold: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // Pre-green: 10 stationary frames — counter is drained each frame
+    detector.processTelemetry(
+      makeTelemetry({
+        sessionState: SessionState.ParadeLaps,
+        sessionTime: 100,
+      }),
+      5000
+    );
+    for (let i = 0; i < 10; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          sessionState: SessionState.ParadeLaps,
+          carIdxLapDistPct: [0.5 + (i + 1) * 0.00001],
+          sessionTime: 100.04 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      0
+    );
+
+    // Green flag — car still stationary on track, now detection is live
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          sessionState: SessionState.Racing,
+          carIdxLapDistPct: [0.5 + (11 + i) * 0.00001],
+          sessionTime: 100.44 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents.filter((i) => i.type === IncidentType.Crash)).toHaveLength(
+      1
     );
   });
 });
