@@ -1,6 +1,7 @@
 import type { IrSdkBridge, Session, Telemetry } from '@irdashies/types';
 import mockSessionInfo from '../../../irsdk/node/utils/mock-data/session.json';
 import mockTelemetry from '../../../irsdk/node/utils/mock-data/telemetry.json';
+import logger from '../../../logger';
 
 export async function generateMockDataFromPath(
   path?: string
@@ -270,7 +271,7 @@ export function generateMockData(sessionData?: {
             prevTelemetry = t;
             const spreadMs = performance.now() - spreadStart;
             if (spreadMs > 1)
-              console.log(`[MockData] spread took ${spreadMs.toFixed(2)}ms`);
+              logger.debug(`[MockData] spread took ${spreadMs.toFixed(2)}ms`);
           }
 
           telemetryIdx = telemetryIdx + 1;
@@ -281,7 +282,7 @@ export function generateMockData(sessionData?: {
           telemetryCallbacks.forEach((cb) => cb(data));
           const cbMs = performance.now() - cbStart;
           if (cbMs > 5)
-            console.log(`[MockData] callbacks took ${cbMs.toFixed(2)}ms`);
+            logger.debug(`[MockData] callbacks took ${cbMs.toFixed(2)}ms`);
         }, 1000 / 60); // Update at 60Hz for smooth telemetry simulation
       }
 

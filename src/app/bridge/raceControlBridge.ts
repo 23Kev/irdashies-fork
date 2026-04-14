@@ -9,6 +9,7 @@ import {
 } from '../storage/incidentStorage';
 import type { Incident, IncidentThresholds } from '../../types/raceControl';
 import { ReplayPositionCommand } from '../irsdk/types/enums';
+import logger from '../logger';
 
 /** Parse "5.12 km" → 5120 (metres) */
 function parseTrackLengthM(str: string): number {
@@ -41,9 +42,12 @@ export const setupRaceControlBridge = () => {
   };
 
   detector.onIncident((incident) => {
+    logger.info(
+      `[RaceControl] incident emitted type=${incident.type} car=${incident.carIdx} (${incident.driverName} #${incident.carNumber}) lap=${incident.lapNum} lapDistPct=${incident.lapDistPct.toFixed(3)} sessionTime=${incident.sessionTime.toFixed(2)} id=${incident.id}`
+    );
     broadcast(incident);
     appendIncident(currentSessionId, incident).catch((err) =>
-      console.error('Failed to persist incident:', err)
+      logger.error('[RaceControl] Failed to persist incident:', err)
     );
   });
 
@@ -67,7 +71,7 @@ export const setupRaceControlBridge = () => {
           if (Number.isFinite(parsed) && parsed > 0) {
             cachedTrackLengthM = parsed;
           } else {
-            console.warn(
+            logger.warn(
               '[RaceControl] Could not parse track length:',
               trackLen
             );
@@ -75,6 +79,9 @@ export const setupRaceControlBridge = () => {
         }
         const sessionId = session?.WeekendInfo?.SubSessionID?.toString() ?? '';
         if (sessionId && sessionId !== currentSessionId) {
+          logger.info(
+            `[RaceControl] session changed: ${currentSessionId || '(none)'} -> ${sessionId}`
+          );
           currentSessionId = sessionId;
           pruneOldSessions(retention);
         }
