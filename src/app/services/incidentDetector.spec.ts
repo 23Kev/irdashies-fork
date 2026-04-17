@@ -12,6 +12,7 @@ const defaultThresholds: IncidentThresholds = {
   suddenStopToSpeed: 20,
   suddenStopFrames: 3,
   offTrackDebounce: 3,
+  pitEntryDebounce: 3,
   cooldownSeconds: 5,
 };
 
@@ -202,8 +203,11 @@ describe('first-frame speed guard', () => {
 });
 
 describe('pit entry detection', () => {
-  it('fires PitEntry when CarIdxOnPitRoad transitions false → true', () => {
-    const detector = new IncidentDetector(defaultThresholds, false);
+  it('fires PitEntry after pitEntryDebounce consecutive OnPitRoad frames', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, pitEntryDebounce: 3 },
+      false
+    );
     const incidents: Incident[] = [];
     detector.onIncident((i) => incidents.push(i));
     detector.updateSession({
@@ -220,17 +224,71 @@ describe('pit entry detection', () => {
       },
     });
 
-    const baseTelemetry = makeTelemetry({ carIdxOnPitRoad: [false] });
-    detector.processTelemetry(baseTelemetry, 5000);
+    // Seed frame (not on pit road)
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false] }),
+      5000
+    );
     expect(incidents).toHaveLength(0);
 
-    const pitTelemetry = makeTelemetry({
-      carIdxOnPitRoad: [true],
-      sessionTime: 100.04,
-    });
-    detector.processTelemetry(pitTelemetry, 5000);
+    // 2 frames on pit road — below debounce, should not fire yet
+    for (let i = 0; i < 2; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxOnPitRoad: [true],
+          sessionTime: 100.04 + i * 0.04,
+        }),
+        5000
+      );
+    }
+    expect(incidents).toHaveLength(0);
+
+    // 3rd consecutive frame — fires
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.12 }),
+      5000
+    );
     expect(incidents).toHaveLength(1);
     expect(incidents[0].type).toBe(IncidentType.PitEntry);
+  });
+
+  it('does not fire PitEntry for a single-frame OnPitRoad blip', () => {
+    const detector = new IncidentDetector(
+      { ...defaultThresholds, pitEntryDebounce: 3 },
+      false
+    );
+    const incidents: Incident[] = [];
+    detector.onIncident((i) => incidents.push(i));
+    detector.updateSession({
+      DriverInfo: {
+        Drivers: [
+          {
+            CarIdx: 0,
+            UserName: 'Test',
+            CarNumber: '99',
+            TeamName: '',
+            CarIsPaceCar: 0,
+          },
+        ],
+      },
+    });
+
+    // Seed, then one blip on pit road, then back off
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false] }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.04 }),
+      5000
+    );
+    detector.processTelemetry(
+      makeTelemetry({ carIdxOnPitRoad: [false], sessionTime: 100.08 }),
+      5000
+    );
+    expect(
+      incidents.filter((i) => i.type === IncidentType.PitEntry)
+    ).toHaveLength(0);
   });
 });
 
@@ -517,16 +575,25 @@ describe('dev mode debug snapshots', () => {
     return { detector, incidents };
   };
 
+  const triggerPitEntry = (detector: IncidentDetector, startTime = 100.04) => {
+    for (let i = 0; i < 3; i++) {
+      detector.processTelemetry(
+        makeTelemetry({
+          carIdxOnPitRoad: [true],
+          sessionTime: startTime + i * 0.04,
+        }),
+        5000
+      );
+    }
+  };
+
   it('attaches debug snapshot when isDev=true', () => {
     const { detector, incidents } = setupDetector(true);
     detector.processTelemetry(
       makeTelemetry({ carIdxOnPitRoad: [false] }),
       5000
     );
-    detector.processTelemetry(
-      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.04 }),
-      5000
-    );
+    triggerPitEntry(detector);
     const debug = incidents[0].debug;
     expect(debug).toBeDefined();
     expect(debug?.trigger).toBe('pit-entry');
@@ -541,10 +608,7 @@ describe('dev mode debug snapshots', () => {
       makeTelemetry({ carIdxOnPitRoad: [false] }),
       5000
     );
-    detector.processTelemetry(
-      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.04 }),
-      5000
-    );
+    triggerPitEntry(detector);
     expect(incidents[0].debug).toBeUndefined();
   });
 
@@ -561,10 +625,7 @@ describe('dev mode debug snapshots', () => {
         5000
       );
     }
-    detector.processTelemetry(
-      makeTelemetry({ carIdxOnPitRoad: [true], sessionTime: 100.64 }),
-      5000
-    );
+    triggerPitEntry(detector, 100.64);
     expect(incidents[0].debug?.frameHistory.length).toBe(10);
   });
 });

@@ -575,13 +575,13 @@ export interface GantryConfig {
   suddenStopToSpeed: number;
   suddenStopFrames: number;
   offTrackDebounce: number;
+  pitEntryDebounce: number;
   cooldownSeconds: number;
   // Persistence
   sessionRetention: SessionRetention;
 }
 
 export type GantryWidgetSettings = BaseWidgetSettings<GantryConfig>;
-
 
 // ===========================
 // Widget config map + typed widget
