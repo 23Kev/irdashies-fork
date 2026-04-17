@@ -163,6 +163,7 @@ export class IncidentDetector {
         recentRawSpeeds: [],
         slowFrameCount: 0,
         offTrackFrameCount: 0,
+        onPitRoadFrameCount: 0,
         lastIncidentTime: {} as Record<string, number>,
         hasPrevFrame: false,
       });
@@ -271,25 +272,29 @@ export class IncidentDetector {
       }
 
       // --- Pit entry ---
-      if (
-        onPitRoad &&
-        !state.prevOnPitRoad &&
-        !this.isCoolingDown(state, IncidentType.PitEntry, nowMs)
-      ) {
-        state.lastIncidentTime[IncidentType.PitEntry] = nowMs;
-        const debug = this.buildDebugSnapshot(
-          carIdx,
-          state,
-          'pit-entry',
-          `Pit entry detected for car ${carIdx}`
-        );
-        const _e0 = performance.now();
-        this.emit({
-          ...this.createIncidentBase(carIdx, snap, IncidentType.PitEntry),
-          debug,
-        });
-        emitMs += performance.now() - _e0;
-        emitCount++;
+      if (onPitRoad) {
+        state.onPitRoadFrameCount++;
+        if (
+          state.onPitRoadFrameCount === this.thresholds.pitEntryDebounce &&
+          !this.isCoolingDown(state, IncidentType.PitEntry, nowMs)
+        ) {
+          state.lastIncidentTime[IncidentType.PitEntry] = nowMs;
+          const debug = this.buildDebugSnapshot(
+            carIdx,
+            state,
+            'pit-entry',
+            `Pit entry detected for car ${carIdx} after ${state.onPitRoadFrameCount} frames`
+          );
+          const _e0 = performance.now();
+          this.emit({
+            ...this.createIncidentBase(carIdx, snap, IncidentType.PitEntry),
+            debug,
+          });
+          emitMs += performance.now() - _e0;
+          emitCount++;
+        }
+      } else {
+        state.onPitRoadFrameCount = 0;
       }
 
       // --- Speed calculation ---

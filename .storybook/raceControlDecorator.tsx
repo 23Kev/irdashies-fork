@@ -29,6 +29,7 @@ const mockIncidents: Incident[] = [
         suddenStopToSpeed: 20,
         suddenStopFrames: 3,
         offTrackDebounce: 3,
+        pitEntryDebounce: 3,
         cooldownSeconds: 5,
       },
       carStateAtDetection: {

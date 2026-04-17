@@ -18,6 +18,7 @@ type ThresholdKey =
   | 'suddenStopToSpeed'
   | 'suddenStopFrames'
   | 'offTrackDebounce'
+  | 'pitEntryDebounce'
   | 'cooldownSeconds';
 
 const thresholdFields: {
@@ -59,6 +60,12 @@ const thresholdFields: {
   {
     key: 'offTrackDebounce',
     label: 'Off-track debounce (frames)',
+    min: 1,
+    max: 10,
+  },
+  {
+    key: 'pitEntryDebounce',
+    label: 'Pit entry debounce (frames)',
     min: 1,
     max: 10,
   },
@@ -119,6 +126,7 @@ export const GantrySettings = memo(() => {
             suddenStopToSpeed: merged.suddenStopToSpeed,
             suddenStopFrames: merged.suddenStopFrames,
             offTrackDebounce: merged.offTrackDebounce,
+            pitEntryDebounce: merged.pitEntryDebounce,
             cooldownSeconds: merged.cooldownSeconds,
           };
           window.raceControlBridge?.updateThresholds(thresholds);

@@ -25,6 +25,7 @@ const defaultThresholds: IncidentThresholds = {
   suddenStopToSpeed: 20,
   suddenStopFrames: 3,
   offTrackDebounce: 3,
+  pitEntryDebounce: 3,
   cooldownSeconds: 5,
 };
 

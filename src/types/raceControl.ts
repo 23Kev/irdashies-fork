@@ -13,6 +13,7 @@ export interface IncidentThresholds {
   suddenStopToSpeed: number; // km/h, default 20
   suddenStopFrames: number; // frames, default 3
   offTrackDebounce: number; // frames, default 3
+  pitEntryDebounce: number; // frames, default 3
   cooldownSeconds: number; // seconds, default 5
 }
 
@@ -72,6 +73,7 @@ export interface CarIncidentState {
   recentRawSpeeds: number[];
   slowFrameCount: number;
   offTrackFrameCount: number;
+  onPitRoadFrameCount: number;
   lastIncidentTime: Record<string, number>;
   hasPrevFrame: boolean;
 }
