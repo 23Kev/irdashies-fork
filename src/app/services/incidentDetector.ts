@@ -243,11 +243,8 @@ export class IncidentDetector {
   }
 
   processTelemetry(snap: TelemetrySnapshot, trackLengthM: number) {
-    const ptStart = performance.now();
     const nowMs = Date.now();
     const numCars = snap.carIdxLapDistPct.length;
-    let emitCount = 0;
-    let emitMs = 0;
 
     for (let carIdx = 0; carIdx < numCars; carIdx++) {
       const driver = this.sessionDrivers.get(carIdx);
@@ -285,13 +282,10 @@ export class IncidentDetector {
             'pit-entry',
             `Pit entry detected for car ${carIdx} after ${state.onPitRoadFrameCount} frames`
           );
-          const _e0 = performance.now();
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.PitEntry),
             debug,
           });
-          emitMs += performance.now() - _e0;
-          emitCount++;
         }
       } else {
         state.onPitRoadFrameCount = 0;
@@ -342,13 +336,10 @@ export class IncidentDetector {
             'off-track',
             `Off-track for ${state.offTrackFrameCount} frames`
           );
-          const _e1 = performance.now();
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.OffTrack),
             debug,
           });
-          emitMs += performance.now() - _e1;
-          emitCount++;
         }
       } else {
         state.offTrackFrameCount = 0;
@@ -370,13 +361,10 @@ export class IncidentDetector {
           'black-flag',
           `Black flag for car ${carIdx}`
         );
-        const _e2 = performance.now();
         this.emit({
           ...this.createIncidentBase(carIdx, snap, IncidentType.BlackFlag),
           debug,
         });
-        emitMs += performance.now() - _e2;
-        emitCount++;
       }
       if (
         newFlags & GlobalFlags.Furled &&
@@ -389,13 +377,10 @@ export class IncidentDetector {
           'slowdown-flag',
           `Slowdown flag for car ${carIdx}`
         );
-        const _e3 = performance.now();
         this.emit({
           ...this.createIncidentBase(carIdx, snap, IncidentType.Slowdown),
           debug,
         });
-        emitMs += performance.now() - _e3;
-        emitCount++;
       }
 
       // --- Sustained slow crash ---
@@ -416,13 +401,10 @@ export class IncidentDetector {
               'sustained-slow',
               `avgSpeed ${state.currentAvgSpeed.toFixed(1)} km/h < threshold ${this.thresholds.slowSpeedThreshold} km/h for ${state.slowFrameCount} frames`
             );
-            const _e4 = performance.now();
             this.emit({
               ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
               debug,
             });
-            emitMs += performance.now() - _e4;
-            emitCount++;
           }
         } else {
           state.slowFrameCount = 0;
@@ -453,13 +435,10 @@ export class IncidentDetector {
             'sudden-stop',
             `Speed dropped from ${state.recentRawSpeeds[0]?.toFixed(1)} to ${rawSpeed.toFixed(1)} km/h`
           );
-          const _e5 = performance.now();
           this.emit({
             ...this.createIncidentBase(carIdx, snap, IncidentType.Crash),
             debug,
           });
-          emitMs += performance.now() - _e5;
-          emitCount++;
         }
       }
 
@@ -469,13 +448,6 @@ export class IncidentDetector {
       state.prevSessionTime = snap.sessionTime;
       state.prevTrackSurface = surface;
       state.prevSessionFlags = snap.carIdxSessionFlags[carIdx] ?? 0;
-    }
-
-    const ptMs = performance.now() - ptStart;
-    if (ptMs > 10) {
-      logger.debug(
-        `[IncidentDetector] processTelemetry ${ptMs.toFixed(1)}ms total | ${emitCount} emits (${emitMs.toFixed(1)}ms in listeners) | loop=${(ptMs - emitMs).toFixed(1)}ms`
-      );
     }
   }
 
