@@ -21,4 +21,8 @@ export interface IrSdkBridge {
     position: ReplayPositionCommand,
     frame: number
   ) => void;
+  triggerReplaySessionSearch: (
+    sessionNum: number,
+    sessionTimeMs: number
+  ) => void;
 }

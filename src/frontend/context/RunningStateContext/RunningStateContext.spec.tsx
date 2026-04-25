@@ -12,6 +12,7 @@ describe('RunningStateContext', () => {
     stop: vi.fn(),
     changeCameraNumber: vi.fn(),
     changeReplayPosition: vi.fn(),
+    triggerReplaySessionSearch: vi.fn(),
   };
 
   const TestComponent: React.FC = () => {

@@ -8,15 +8,12 @@ import {
   pruneOldSessions,
 } from '../storage/incidentStorage';
 import type { Incident, IncidentThresholds } from '../../types/raceControl';
-import { ReplayPositionCommand } from '../irsdk/types/enums';
 import logger from '../logger';
 
 /** Parse "5.12 km" → 5120 (metres) */
 function parseTrackLengthM(str: string): number {
   return parseFloat(str) * 1000;
 }
-
-const REPLAY_FPS = 60;
 
 const defaultThresholds: IncidentThresholds = {
   slowSpeedThreshold: 15,
@@ -154,13 +151,9 @@ export const setupRaceControlBridge = () => {
     (_event, incident: Incident, seconds: number) => {
       const bridge = getCurrentBridge();
       if (!bridge) return;
-      const targetFrame =
-        incident.replayFrameNum - Math.round(REPLAY_FPS * seconds);
+      const targetTimeMs = Math.max(0, (incident.sessionTime - seconds) * 1000);
       bridge.changeCameraNumber(incident.carNumber, 0, 0);
-      bridge.changeReplayPosition(
-        ReplayPositionCommand.Begin,
-        Math.max(0, targetFrame)
-      );
+      bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeMs);
     }
   );
 };
