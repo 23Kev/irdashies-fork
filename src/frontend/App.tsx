@@ -16,6 +16,7 @@ import { HideUIWrapper } from './components/HideUIWrapper/HideUIWrapper';
 import { OverlayContainer } from './components/OverlayContainer';
 import { ErrorBoundary } from './components/ErrorBoundary/ErrorBoundary';
 import { Gantry } from './components/Gantry/Gantry';
+import { LapGapStoreUpdater } from '@irdashies/context';
 
 /**
  * Check if this window is the settings window based on URL hash
@@ -49,6 +50,7 @@ const SettingsApp = () => {
  */
 const GantryApp = () => (
   <ThemeManager>
+    <LapGapStoreUpdater />
     <div className="w-full h-full bg-slate-900 text-white">
       <Gantry />
     </div>
