@@ -841,7 +841,7 @@ export class WebSocketBridge implements IrSdkBridge {
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _sessionNum: number,
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    _sessionTimeMs: number
+    _sessionTimeSecs: number
   ): void {
     // Not supported in browser component mode
   }

@@ -151,9 +151,17 @@ export const setupRaceControlBridge = () => {
     (_event, incident: Incident, seconds: number) => {
       const bridge = getCurrentBridge();
       if (!bridge) return;
-      const targetTimeMs = Math.max(0, (incident.sessionTime - seconds) * 1000);
+      const targetTimeSecs = Math.max(0, incident.sessionTime - seconds);
+      logger.info(
+        `[RaceControl] replayIncident car=${incident.carIdx} (${incident.driverName} #${incident.carNumber}) type=${incident.type} sessionTime=${incident.sessionTime.toFixed(2)} sessionNum=${incident.sessionNum} offset=-${seconds}s targetTimeSecs=${targetTimeSecs.toFixed(2)}`
+      );
       bridge.changeCameraNumber(incident.carNumber, 0, 0);
-      bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeMs);
+      bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeSecs);
+      // iRacing ignores a duplicate seek if the replay is already near that
+      // position. A second seek after a short delay forces it to re-evaluate.
+      setTimeout(() => {
+        bridge.triggerReplaySessionSearch(incident.sessionNum, targetTimeSecs);
+      }, 200);
     }
   );
 };

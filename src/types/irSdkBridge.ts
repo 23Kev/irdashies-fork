@@ -23,6 +23,6 @@ export interface IrSdkBridge {
   ) => void;
   triggerReplaySessionSearch: (
     sessionNum: number,
-    sessionTimeMs: number
+    sessionTimeSecs: number
   ) => void;
 }
