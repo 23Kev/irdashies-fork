@@ -821,7 +821,6 @@ export class WebSocketBridge implements IrSdkBridge {
     });
   }
 
-   
   changeCameraNumber(
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     _carNumber: string,
@@ -835,6 +834,15 @@ export class WebSocketBridge implements IrSdkBridge {
 
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
   changeReplayPosition(_position: number, _frame: number): void {
+    // Not supported in browser component mode
+  }
+
+  triggerReplaySessionSearch(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _sessionNum: number,
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    _sessionTimeMs: number
+  ): void {
     // Not supported in browser component mode
   }
 }

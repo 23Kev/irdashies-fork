@@ -355,6 +355,8 @@ export function generateMockData(sessionData?: {
     changeCameraNumber: () => {},
     // eslint-disable-next-line @typescript-eslint/no-empty-function
     changeReplayPosition: () => {},
+    // eslint-disable-next-line @typescript-eslint/no-empty-function
+    triggerReplaySessionSearch: () => {},
   };
 }
 
