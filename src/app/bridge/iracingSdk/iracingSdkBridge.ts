@@ -151,7 +151,7 @@ export async function publishIRacingSDKEvents(
       sdk.changeCameraNumber(carNumber, group, camera),
     changeReplayPosition: (position, frame) =>
       sdk.changeReplayPosition(position, frame),
-    triggerReplaySessionSearch: (sessionNum, sessionTimeSecs) =>
-      sdk.triggerReplaySessionSearch(sessionNum, sessionTimeSecs),
+    triggerReplaySessionSearch: (sessionNum, sessionTimeMs) =>
+      sdk.triggerReplaySessionSearch(sessionNum, sessionTimeMs),
   };
 }
