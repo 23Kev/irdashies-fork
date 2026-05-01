@@ -28,6 +28,18 @@ export interface ContainerBoundsInfo {
   isPrimary?: boolean;
   /** Full display bounds — used for widget-to-display assignment filtering */
   displayBounds?: { x: number; y: number; width: number; height: number };
+  /**
+   * Bounds of all displays the app knows about. The renderer uses this so
+   * the primary window can tell "widget belongs to no display, fall back to
+   * primary" apart from "widget belongs to a different display, render
+   * there only".
+   */
+  allDisplayBounds?: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  }[];
 }
 
 export interface DashboardBridge {

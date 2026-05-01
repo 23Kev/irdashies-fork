@@ -6,6 +6,7 @@ import { WIDGET_MAP } from '../../WidgetIndex';
 import { XIcon } from '@phosphor-icons/react';
 import { ErrorBoundary } from '../ErrorBoundary/ErrorBoundary';
 import { SectorTimingUpdater } from './SectorTimingUpdater';
+import { PerfDiagnostic } from './PerfDiagnostic';
 
 export const OverlayContainer = memo(() => {
   const {
@@ -80,22 +81,41 @@ export const OverlayContainer = memo(() => {
   );
 
   // When running per-display windows, each window only renders its own widgets.
-  // A widget belongs to a display if its center point falls within that display's bounds.
-  // Unmatched widgets (e.g. default positions that fall in no display) render on the primary.
+  // A widget belongs to a display if its center point falls within that
+  // display's bounds. Widgets whose center is outside ALL known displays
+  // fall back to rendering on the primary window.
   const widgetsForThisDisplay = containerBoundsInfo?.displayId
     ? enabledWidgets.filter((widget) => {
         const displayBounds =
           containerBoundsInfo.displayBounds ?? containerBoundsInfo.expected;
         const centerX = widget.layout.x + widget.layout.width / 2;
         const centerY = widget.layout.y + widget.layout.height / 2;
-        const inThisDisplay =
-          centerX >= displayBounds.x &&
-          centerX < displayBounds.x + displayBounds.width &&
-          centerY >= displayBounds.y &&
-          centerY < displayBounds.y + displayBounds.height;
-        return (
-          inThisDisplay || (!inThisDisplay && containerBoundsInfo.isPrimary)
-        );
+        const inBounds = (b: {
+          x: number;
+          y: number;
+          width: number;
+          height: number;
+        }) =>
+          centerX >= b.x &&
+          centerX < b.x + b.width &&
+          centerY >= b.y &&
+          centerY < b.y + b.height;
+
+        if (inBounds(displayBounds)) return true;
+
+        // Primary fallback: render the widget here only if it doesn't belong
+        // to any *other* display either. Without this check, the primary
+        // window pulls in every widget from every other display and runs
+        // their telemetry subscriptions/effects in addition to its own —
+        // which tanks the primary's renderer.
+        if (containerBoundsInfo.isPrimary) {
+          const allBounds = containerBoundsInfo.allDisplayBounds;
+          if (!allBounds || allBounds.length === 0) return true;
+          const inSomeDisplay = allBounds.some(inBounds);
+          return !inSomeDisplay;
+        }
+
+        return false;
       })
     : enabledWidgets;
 
@@ -107,6 +127,7 @@ export const OverlayContainer = memo(() => {
       ].join(' ')}
     >
       <SectorTimingUpdater />
+      <PerfDiagnostic />
       {widgetsForThisDisplay.map((widget, index) => {
         const WidgetComponent = WIDGET_MAP[widget.type || widget.id];
         if (!WidgetComponent) {

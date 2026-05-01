@@ -270,6 +270,12 @@ export class OverlayManager {
         displayId: display.id,
         isPrimary,
         displayBounds: { ...expectedBounds },
+        allDisplayBounds: screen.getAllDisplays().map((d) => ({
+          x: d.bounds.x,
+          y: d.bounds.y,
+          width: d.bounds.width,
+          height: d.bounds.height,
+        })),
       };
 
       this.displayBoundsInfo.set(display.id, boundsInfo);
