@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import {
   useTelemetryValues,
   useTelemetryValue,
@@ -28,13 +28,14 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
 
   const [leftCarIdx, setLeftCarIdx] = useState<number | null>(null);
   const [rightCarIdx, setRightCarIdx] = useState<number | null>(null);
-  const [prevPercents, setPrevPercents] = useState<{
+  // Held in a ref (not state) so writes don't trigger re-renders. Without
+  // this, the second effect below would form a setState/re-render cycle that
+  // crash-loops the widget under React's max-update-depth limit and tanks
+  // the renderer.
+  const prevPercentsRef = useRef<{
     left: number | null;
     right: number | null;
-  }>({
-    left: null,
-    right: null,
-  });
+  }>({ left: null, right: null });
 
   const result = useMemo(() => {
     const defaultState = {
@@ -104,10 +105,13 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       leftPercent =
         is3Wide && leftCarIdx === null ? 0 : calculatePercent(leftCarIdx);
 
-      if (
-        prevPercents.left !== null &&
-        Math.abs(prevPercents.left - leftPercent) > 0.5
-      ) {
+      // Read prev percent from ref (not state) so this memo doesn't take
+      // it as a dep. State here would form a setState/re-render cycle that
+      // crash-loops the widget. `disableTransition` is a CSS hint — being
+      // one frame stale is harmless.
+      const prevLeft = prevPercentsRef.current.left;
+      // eslint-disable-next-line react-hooks/refs
+      if (prevLeft !== null && Math.abs(prevLeft - leftPercent) > 0.5) {
         disableTransition = true;
       }
     }
@@ -122,10 +126,9 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       rightPercent =
         is3Wide && rightCarIdx === null ? 0 : calculatePercent(rightCarIdx);
 
-      if (
-        prevPercents.right !== null &&
-        Math.abs(prevPercents.right - rightPercent) > 0.5
-      ) {
+      const prevRight = prevPercentsRef.current.right;
+      // eslint-disable-next-line react-hooks/refs
+      if (prevRight !== null && Math.abs(prevRight - rightPercent) > 0.5) {
         disableTransition = true;
       }
     }
@@ -138,6 +141,8 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       rightPercent,
       disableTransition,
     };
+    // prevPercentsRef is intentionally omitted from deps — it's a ref so
+    // updates don't and shouldn't trigger memo invalidation.
   }, [
     carLeftRight,
     lapDistPcts,
@@ -147,15 +152,13 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     isOnTrack,
     leftCarIdx,
     rightCarIdx,
-    prevPercents,
   ]);
 
   useEffect(() => {
     if (carLeftRight <= CarLeftRight.Clear) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLeftCarIdx(null);
       setRightCarIdx(null);
-      setPrevPercents({ left: null, right: null });
+      prevPercentsRef.current = { left: null, right: null };
       return;
     }
 
@@ -203,15 +206,13 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       // If BOTH are null (fresh 3-wide), we stay at 0%
     }
 
-    // Only write a new prevPercents object when the rounded percent actually
-    // changed — otherwise every tick allocates a fresh object reference,
-    // triggers a re-render, invalidates the memo (which depends on
-    // prevPercents), runs this effect again, and so on.
-    const nextLeft = result.leftPercent !== 0 ? result.leftPercent : null;
-    const nextRight = result.rightPercent !== 0 ? result.rightPercent : null;
-    if (nextLeft !== prevPercents.left || nextRight !== prevPercents.right) {
-      setPrevPercents({ left: nextLeft, right: nextRight });
-    }
+    // Capture this render's percents into the ref so the next memo run can
+    // detect a >0.5 jump (transition disable). Writing to a ref does not
+    // trigger a re-render — that is the whole point.
+    prevPercentsRef.current = {
+      left: result.leftPercent !== 0 ? result.leftPercent : null,
+      right: result.rightPercent !== 0 ? result.rightPercent : null,
+    };
   }, [
     result.show,
     carLeftRight,
@@ -221,7 +222,6 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     result.rightPercent,
     leftCarIdx,
     rightCarIdx,
-    prevPercents,
   ]);
 
   return result;
