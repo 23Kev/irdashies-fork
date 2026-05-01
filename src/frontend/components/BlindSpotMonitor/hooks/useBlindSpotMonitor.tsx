@@ -203,10 +203,15 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
       // If BOTH are null (fresh 3-wide), we stay at 0%
     }
 
-    setPrevPercents({
-      left: result.leftPercent !== 0 ? result.leftPercent : null,
-      right: result.rightPercent !== 0 ? result.rightPercent : null,
-    });
+    // Only write a new prevPercents object when the rounded percent actually
+    // changed — otherwise every tick allocates a fresh object reference,
+    // triggers a re-render, invalidates the memo (which depends on
+    // prevPercents), runs this effect again, and so on.
+    const nextLeft = result.leftPercent !== 0 ? result.leftPercent : null;
+    const nextRight = result.rightPercent !== 0 ? result.rightPercent : null;
+    if (nextLeft !== prevPercents.left || nextRight !== prevPercents.right) {
+      setPrevPercents({ left: nextLeft, right: nextRight });
+    }
   }, [
     result.show,
     carLeftRight,
@@ -216,6 +221,7 @@ export const useBlindSpotMonitor = (): BlindSpotMonitorState => {
     result.rightPercent,
     leftCarIdx,
     rightCarIdx,
+    prevPercents,
   ]);
 
   return result;
