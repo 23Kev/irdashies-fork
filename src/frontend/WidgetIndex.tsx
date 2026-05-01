@@ -18,6 +18,7 @@ import { LapTimeLog } from './components/LapTimeLog/LapTimeLog';
 import { InformationBar } from './components/InformationBar/InformationBar';
 import { SlowCarAhead } from './components/SlowCarAhead/SlowCarAhead';
 import { SectorDelta } from './components/SectorDelta/SectorDelta';
+import { withRenderCount } from './components/OverlayContainer/renderCounter';
 
 export {
   Standings,
@@ -49,26 +50,29 @@ export const WIDGET_MAP: Record<
   (config?: any) => React.JSX.Element | null
 > = {
   /* eslint-enable @typescript-eslint/no-explicit-any */
-  standings: Standings,
-  input: Input,
-  relative: Relative,
-  map: TrackMap,
-  flatmap: FlatTrackMap,
-  weather: Weather,
-  fastercarsfrombehind: FasterCarsFromBehind,
-  fuel: FuelCalculator,
-  blindspotmonitor: BlindSpotMonitor,
-  garagecover: GarageCover,
-  rejoin: RejoinIndicator,
-  telemetryinspector: TelemetryInspector,
-  pitlanehelper: PitlaneHelper,
-  tachometer: Tachometer,
-  flag: Flag,
-  twitchchat: TwitchChat,
-  laptimelog: LapTimeLog,
-  infobar: InformationBar,
-  slowcarahead: SlowCarAhead,
-  sectordelta: SectorDelta,
+  standings: withRenderCount('standings', Standings),
+  input: withRenderCount('input', Input),
+  relative: withRenderCount('relative', Relative),
+  map: withRenderCount('map', TrackMap),
+  flatmap: withRenderCount('flatmap', FlatTrackMap),
+  weather: withRenderCount('weather', Weather),
+  fastercarsfrombehind: withRenderCount(
+    'fastercarsfrombehind',
+    FasterCarsFromBehind
+  ),
+  fuel: withRenderCount('fuel', FuelCalculator),
+  blindspotmonitor: withRenderCount('blindspotmonitor', BlindSpotMonitor),
+  garagecover: withRenderCount('garagecover', GarageCover),
+  rejoin: withRenderCount('rejoin', RejoinIndicator),
+  telemetryinspector: withRenderCount('telemetryinspector', TelemetryInspector),
+  pitlanehelper: withRenderCount('pitlanehelper', PitlaneHelper),
+  tachometer: withRenderCount('tachometer', Tachometer),
+  flag: withRenderCount('flag', Flag),
+  twitchchat: withRenderCount('twitchchat', TwitchChat),
+  laptimelog: withRenderCount('laptimelog', LapTimeLog),
+  infobar: withRenderCount('infobar', InformationBar),
+  slowcarahead: withRenderCount('slowcarahead', SlowCarAhead),
+  sectordelta: withRenderCount('sectordelta', SectorDelta),
 };
 
 export type WidgetId = keyof typeof WIDGET_MAP;

@@ -63,6 +63,16 @@ class Taskbar {
         },
       },
       {
+        label: 'Open DevTools (all overlays)',
+        click: () => {
+          for (const { window } of this.overlayManager.getOverlays()) {
+            if (!window.isDestroyed()) {
+              window.webContents.openDevTools({ mode: 'detach' });
+            }
+          }
+        },
+      },
+      {
         label: 'Quit',
         click: () => {
           this.overlayManager.quitApp();
