@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import {
-  useTelemetryValues,
+  useTelemetryValuesRounded,
   useSessionStore,
   useFocusCarIdx,
   useTrackLength,
@@ -24,7 +24,9 @@ export const usePitboxPosition = (
 ): PitboxPositionResult => {
   const session = useSessionStore((state) => state.session);
   const focusCarIdx = useFocusCarIdx();
-  const carIdxLapDistPct = useTelemetryValues('CarIdxLapDistPct');
+  // 3dp = ~5m on a 5km track — distance-to-pitbox checks compare against
+  // approachDistance (200m default), so 5m noise is irrelevant.
+  const carIdxLapDistPct = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
   const trackLength = useTrackLength() ?? 0;
   const { pitEntryPct, pitExitPct } = usePitLaneStore();
 

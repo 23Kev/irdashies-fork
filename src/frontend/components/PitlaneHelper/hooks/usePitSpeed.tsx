@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import { useTelemetryValueRounded, useSessionStore } from '@irdashies/context';
 
 export interface PitSpeedResult {
   deltaKph: number;
@@ -16,7 +16,10 @@ export interface PitSpeedResult {
 
 export const usePitSpeed = (): PitSpeedResult => {
   const session = useSessionStore((state) => state.session);
-  const speed = useTelemetryValue('Speed') ?? 0;
+  // 1dp m/s = 0.36 km/h resolution. Pit-speed delta display shows 1 decimal
+  // place in km/h, so finer resolution is invisible. Speeding warning
+  // thresholds are full-integer km/h (1.5 km/h over) — well above 0.36.
+  const speed = useTelemetryValueRounded('Speed', 1) ?? 0;
 
   return useMemo(() => {
     // Parse pit speed limit (format: "60.00 kph" or "35.00 mph")

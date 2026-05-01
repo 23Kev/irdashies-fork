@@ -5,7 +5,11 @@ import {
   useDashboard,
   type SectorColor,
 } from '@irdashies/context';
-import { useTelemetryValue, useSessionStore } from '@irdashies/context';
+import {
+  useTelemetryValue,
+  useTelemetryValueRounded,
+  useSessionStore,
+} from '@irdashies/context';
 import type { SectorDeltaConfig } from '@irdashies/types';
 import { getSectorDeltaThresholdFractions } from '../../SectorDelta/sectorColorUtils';
 
@@ -45,8 +49,10 @@ export const useSectorTiming = (): SectorColor[] => {
     setThresholds(green, yellow);
   }, [sectorDeltaThresholds, setThresholds]);
 
-  const lapDistPct = useTelemetryValue('LapDistPct');
-  const sessionTime = useTelemetryValue('SessionTime');
+  // 4dp matches REFERENCE_INTERVAL = 0.0025 used by useLiveSectorDelta;
+  // 2dp on SessionTime gives 10ms resolution (display is 100ms).
+  const lapDistPct = useTelemetryValueRounded('LapDistPct', 4);
+  const sessionTime = useTelemetryValueRounded('SessionTime', 2);
   const isOnTrack = useTelemetryValue<boolean>('IsOnTrack');
 
   // Sync sector boundaries whenever the track/session changes
@@ -69,14 +75,8 @@ export const useSectorTiming = (): SectorColor[] => {
 
   // Feed each telemetry tick into the store
   useEffect(() => {
-    if (
-      lapDistPct === undefined ||
-      lapDistPct === null ||
-      sessionTime === undefined ||
-      sessionTime === null
-    )
-      return;
-    tick(lapDistPct as number, sessionTime as number, !!isOnTrack);
+    if (lapDistPct === undefined || sessionTime === undefined) return;
+    tick(lapDistPct, sessionTime, !!isOnTrack);
   }, [lapDistPct, sessionTime, isOnTrack, tick]);
 
   return useSectorColors();

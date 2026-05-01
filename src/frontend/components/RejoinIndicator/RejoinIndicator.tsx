@@ -7,6 +7,7 @@
 import {
   useTelemetryValues,
   useTelemetryValue,
+  useTelemetryValueRounded,
   useFocusCarIdx,
   useDrivingState,
   useSessionVisibility,
@@ -29,8 +30,11 @@ export const RejoinIndicator = () => {
   const playerInPitStall =
     useTelemetryValue<number>('PlayerCarInPitStall') === 1;
   const carIdxOnPitRoad = useTelemetryValues<boolean[]>('CarIdxOnPitRoad');
-  const carSpeedForPlayer = useTelemetryValue('Speed');
-  const sessionTime = useTelemetryValue<number>('SessionTime') ?? 0;
+  // 1dp m/s = 0.36 km/h. Visibility threshold is configured in km/h
+  // (default 30) so this resolution is far finer than the gate.
+  const carSpeedForPlayer = useTelemetryValueRounded('Speed', 1);
+  // Only used as `< 3` start-of-session gate; whole-second resolution suffices.
+  const sessionTime = useTelemetryValueRounded('SessionTime', 0) ?? 0;
   const sessionState = useTelemetryValue<number>('SessionState') ?? 0;
   const { isDriving } = useDrivingState();
   const drivers = useDriverRelatives({ buffer: 3 });
@@ -38,7 +42,12 @@ export const RejoinIndicator = () => {
   // Generate demo data when in demo mode
   if (isDemoMode) {
     const demoData = getDemoRejoinData(settings);
-    return <RejoinIndicatorDisplay gap={demoData.gap} status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'} />;
+    return (
+      <RejoinIndicatorDisplay
+        gap={demoData.gap}
+        status={demoData.status as 'Clear' | 'Caution' | 'Do Not Rejoin'}
+      />
+    );
   }
 
   // If we don't have dashboard settings or no focused player, hide
@@ -128,8 +137,6 @@ export const RejoinIndicator = () => {
     </div>
   );
 };
-
-
 
 export const RejoinIndicatorDisplay = ({
   gap,

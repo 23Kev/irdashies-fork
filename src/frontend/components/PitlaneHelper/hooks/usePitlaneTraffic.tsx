@@ -1,5 +1,9 @@
 import { useMemo } from 'react';
-import { useTelemetryValues, useFocusCarIdx } from '@irdashies/context';
+import {
+  useTelemetryValues,
+  useTelemetryValuesRounded,
+  useFocusCarIdx,
+} from '@irdashies/context';
 
 export interface PitlaneTrafficResult {
   carsAhead: number;
@@ -10,7 +14,9 @@ export interface PitlaneTrafficResult {
 export const usePitlaneTraffic = (enabled: boolean): PitlaneTrafficResult => {
   const focusCarIdx = useFocusCarIdx();
   const carIdxOnPitRoadRaw = useTelemetryValues('CarIdxOnPitRoad');
-  const carIdxLapDistPctRaw = useTelemetryValues('CarIdxLapDistPct');
+  // 3dp = ~5m on a 5km track — sufficient to count cars in pit lane and
+  // avoids re-rendering on every 25Hz tick when nothing visibly changed.
+  const carIdxLapDistPctRaw = useTelemetryValuesRounded('CarIdxLapDistPct', 3);
 
   return useMemo(() => {
     const carIdxOnPitRoad = carIdxOnPitRoadRaw ?? [];
