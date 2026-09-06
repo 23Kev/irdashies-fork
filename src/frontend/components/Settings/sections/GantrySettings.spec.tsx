@@ -1,8 +1,19 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type { DashboardLayout, LapGraphConfig } from '@irdashies/types';
+import type {
+  CameraGroup,
+  DashboardLayout,
+  LapGraphConfig,
+} from '@irdashies/types';
 import { deepMergeConfig, getWidgetDefaultConfig } from '@irdashies/types';
 import { GantrySettings } from './GantrySettings';
+
+/** Camera groups as the session publishes them; Cameras is unused by these tests. */
+const cameraGroup = (GroupNum: number, GroupName: string): CameraGroup => ({
+  GroupNum,
+  GroupName,
+  Cameras: [],
+});
 
 // GantrySettings is memo()'d and takes no props, so a plain rerender() would be
 // skipped. Back the mocked context with a real external store instead, which is
@@ -12,8 +23,9 @@ const mocks = vi.hoisted(() => {
   const listeners = new Set<() => void>();
   return {
     listeners,
-    cameraGroups: undefined as
-      { GroupNum: number; GroupName: string }[] | undefined,
+    // The shared type, so a change to the session contract fails here at
+    // compile time rather than drifting silently.
+    cameraGroups: undefined as CameraGroup[] | undefined,
     onDashboardUpdated: vi.fn(),
     getDashboard: () => dashboard,
     setDashboard: (next: DashboardLayout | undefined) => {
@@ -114,9 +126,9 @@ describe('GantrySettings incident camera', () => {
 
   it("offers the session's own camera groups once they arrive", () => {
     mocks.cameraGroups = [
-      { GroupNum: 12, GroupName: 'Chase' },
-      { GroupNum: 13, GroupName: 'Far Chase' },
-      { GroupNum: 18, GroupName: 'TV1' },
+      cameraGroup(12, 'Chase'),
+      cameraGroup(13, 'Far Chase'),
+      cameraGroup(18, 'TV1'),
     ];
     mocks.setDashboard(dashboardWith('all'));
     render(<GantrySettings />);
@@ -126,7 +138,7 @@ describe('GantrySettings incident camera', () => {
   });
 
   it('keeps a saved group that this track does not offer', () => {
-    mocks.cameraGroups = [{ GroupNum: 12, GroupName: 'Chase' }];
+    mocks.cameraGroups = [cameraGroup(12, 'Chase')];
     mocks.setDashboard(
       dashboardFor(gantryConfig({ incidentCameraGroup: 'Blimp' }))
     );
@@ -138,10 +150,7 @@ describe('GantrySettings incident camera', () => {
   });
 
   it('writes the chosen group', () => {
-    mocks.cameraGroups = [
-      { GroupNum: 13, GroupName: 'Far Chase' },
-      { GroupNum: 18, GroupName: 'TV1' },
-    ];
+    mocks.cameraGroups = [cameraGroup(13, 'Far Chase'), cameraGroup(18, 'TV1')];
     mocks.setDashboard(dashboardWith('all'));
     render(<GantrySettings />);
 

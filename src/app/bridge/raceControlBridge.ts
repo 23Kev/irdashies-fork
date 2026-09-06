@@ -168,6 +168,13 @@ export const setupRaceControlBridge = (
     unsubscribeSession?.();
     unsubscribeTelemetry?.();
 
+    // The cached session belongs to the bridge being replaced. Its camera group
+    // numbers are session-specific, so keeping it across a swap - toggling demo
+    // mode, or the SDK reconnecting - would resolve a group name against the
+    // previous session until the new bridge publishes. Clearing it falls back
+    // to group 0, which leaves the camera alone.
+    latestSession = undefined;
+
     const bridge = getCurrentBridge();
     if (!bridge) return;
 

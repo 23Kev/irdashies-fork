@@ -40,6 +40,8 @@ const { setupRaceControlBridge, resolveCameraGroupNum } =
   await import('./raceControlBridge');
 const { loadIncidents, clearIncidents, pruneOldSessions } =
   await import('../storage/incidentStorage');
+const { getCurrentBridge, onBridgeChanged } =
+  await import('./iracingSdk/setup');
 
 const savedThresholds = {
   slowSpeedThreshold: 21,
@@ -72,11 +74,10 @@ const createRuntime = () => {
   return { runtime, changeSessionId: () => sessionIdChanged('2') };
 };
 
-describe('resolveCameraGroupNum', () => {
-  const sessionWithGroups = (
-    groups: { GroupNum: number; GroupName: string }[]
-  ) => ({ CameraInfo: { Groups: groups } }) as unknown as Session;
+const sessionWithGroups = (groups: { GroupNum: number; GroupName: string }[]) =>
+  ({ CameraInfo: { Groups: groups } }) as unknown as Session;
 
+describe('resolveCameraGroupNum', () => {
   const session = sessionWithGroups([
     { GroupNum: 12, GroupName: 'Chase' },
     { GroupNum: 13, GroupName: 'Far Chase' },
@@ -248,5 +249,69 @@ describe('setupRaceControlBridge', () => {
     expect(handlers.get('raceControl:clearIncidents')?.({})).toBeUndefined();
     expect(loadIncidents).not.toHaveBeenCalled();
     expect(clearIncidents).not.toHaveBeenCalled();
+  });
+});
+
+describe('camera group across a bridge change', () => {
+  /**
+   * A fake SDK bridge. onSessionData is captured rather than invoked, so a test
+   * can decide whether the new bridge has published a session yet.
+   */
+  const createBridge = () => {
+    let publishSession: ((session: Session) => void) | undefined;
+    return {
+      bridge: {
+        onSessionData: vi.fn((cb: (session: Session) => void) => {
+          publishSession = cb;
+          return () => undefined;
+        }),
+        onTelemetry: vi.fn(() => () => undefined),
+        changeCameraNumber: vi.fn(),
+        triggerReplaySessionSearch: vi.fn(),
+      },
+      publishSession: (session: Session) => publishSession?.(session),
+    };
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    handlers.clear();
+    dashboardListeners.clear();
+  });
+
+  it('does not carry a camera group across a bridge swap', () => {
+    // Camera group numbers are session-specific. After the bridge is replaced -
+    // toggling demo mode, or the SDK reconnecting - the old session must not be
+    // used to resolve them, or the wrong camera is selected.
+    const { runtime } = createRuntime();
+    const first = createBridge();
+    vi.mocked(getCurrentBridge).mockReturnValue(
+      first.bridge as unknown as ReturnType<typeof getCurrentBridge>
+    );
+
+    setupRaceControlBridge(
+      runtime,
+      dashboardWith({ incidentCameraGroup: 'Far Chase' })
+    );
+    first.publishSession(
+      sessionWithGroups([{ GroupNum: 13, GroupName: 'Far Chase' }])
+    );
+
+    // The first bridge resolves the group normally.
+    handlers.get('raceControl:focusDriver')?.({}, '7');
+    expect(first.bridge.changeCameraNumber).toHaveBeenCalledWith('7', 13, 0);
+
+    // Swap the bridge and re-wire, without the new one publishing a session.
+    const second = createBridge();
+    vi.mocked(getCurrentBridge).mockReturnValue(
+      second.bridge as unknown as ReturnType<typeof getCurrentBridge>
+    );
+    const rewire = vi.mocked(onBridgeChanged).mock.calls[0]?.[0] as () => void;
+    rewire();
+
+    handlers.get('raceControl:focusDriver')?.({}, '7');
+
+    // Group 0 means "leave the camera alone", which is the safe fallback.
+    expect(second.bridge.changeCameraNumber).toHaveBeenCalledWith('7', 0, 0);
   });
 });
