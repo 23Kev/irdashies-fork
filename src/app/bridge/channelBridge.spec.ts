@@ -369,4 +369,91 @@ describe('ChannelBus', () => {
     expect(target.send).toHaveBeenCalledOnce();
     expect(target.send).toHaveBeenCalledWith(CHANNEL_DELIVERY, 'snapshot', 7);
   });
+
+  it('reports the registered count alongside the active count', () => {
+    const { bus } = createBus();
+    const target = createTarget();
+    const counts: [number, number][] = [];
+    bus.onSubscriberCountChanged((channel, activeCount, registeredCount) => {
+      if (channel === 'snapshot') counts.push([activeCount, registeredCount]);
+    });
+
+    bus.subscribe(target, 'snapshot', 10);
+    target.visible = false;
+    bus.rendererBecameHidden(target.id);
+    bus.unsubscribe(target.id, 'snapshot');
+
+    expect(counts).toEqual([
+      [1, 1],
+      [0, 1],
+      [0, 0],
+    ]);
+  });
+
+  it('notifies when a hidden renderer subscribes', () => {
+    const { bus } = createBus();
+    const target = createTarget();
+    const listener = vi.fn();
+    bus.onSubscriberCountChanged(listener);
+
+    // The Gantry is created with `show: false`, so its first subscribe can
+    // land while hidden. Registered demand still changed.
+    target.visible = false;
+    bus.subscribe(target, 'snapshot', 10);
+
+    expect(listener).toHaveBeenCalledOnce();
+    expect(listener).toHaveBeenCalledWith('snapshot', 0, 1);
+    expect(bus.subscriberCount('snapshot')).toBe(0);
+    expect(bus.registeredSubscriberCount('snapshot')).toBe(1);
+  });
+
+  it('notifies when an inactive subscription is removed', () => {
+    const { bus } = createBus();
+    const first = createTarget(1);
+    const second = createTarget(2);
+    first.visible = false;
+    second.visible = false;
+    bus.subscribe(first, 'snapshot', 10);
+    bus.subscribe(second, 'snapshot', 10);
+    const listener = vi.fn();
+    bus.onSubscriberCountChanged(listener);
+
+    bus.unsubscribe(first.id, 'snapshot');
+    expect(listener).toHaveBeenLastCalledWith('snapshot', 0, 1);
+    expect(bus.registeredSubscriberCount('snapshot')).toBe(1);
+
+    bus.removeRenderer(second.id);
+    expect(listener).toHaveBeenLastCalledWith('snapshot', 0, 0);
+    expect(listener).toHaveBeenCalledTimes(2);
+    expect(bus.registeredSubscriberCount('snapshot')).toBe(0);
+  });
+
+  it('delivers the latest snapshot once to a window shown after hidden publishes', () => {
+    const { bus, clock } = createBus();
+    const target = createTarget();
+    bus.subscribe(target, 'snapshot', 10);
+    bus.publish('snapshot', 1);
+
+    target.visible = false;
+    bus.rendererBecameHidden(target.id);
+    clock.advance(100);
+    bus.publish('snapshot', 2);
+    bus.publish('snapshot', 3);
+    expect(target.send).toHaveBeenCalledTimes(1);
+
+    // Stands in for a processor that kept running while the window was hidden
+    // and republishes its current snapshot as soon as demand returns.
+    bus.onSubscriberCountChanged((channel, activeCount) => {
+      if (channel === 'snapshot' && activeCount > 0) bus.publish('snapshot', 3);
+    });
+    target.visible = true;
+    bus.rendererBecameVisible(target.id);
+
+    expect(target.send).toHaveBeenCalledTimes(2);
+    expect(target.send).toHaveBeenLastCalledWith(
+      CHANNEL_DELIVERY,
+      'snapshot',
+      3
+    );
+  });
 });

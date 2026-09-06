@@ -35,7 +35,15 @@ interface ChannelBusOptions {
   onDeliver?: (rendererId: number, channel: string) => void;
 }
 
-type SubscriberCountListener = (channel: string, count: number) => void;
+/**
+ * `activeCount` is visible demand. `registeredCount` also includes hidden
+ * windows that are still subscribed.
+ */
+type SubscriberCountListener = (
+  channel: string,
+  activeCount: number,
+  registeredCount: number
+) => void;
 
 interface Subscription {
   target: RendererTarget;
@@ -133,14 +141,15 @@ export class ChannelBus {
       definition.kind === 'snapshot' && this.latestSnapshots.has(channel);
     const cachedSnapshotBeforeSubscribe = this.latestSnapshots.get(channel);
     subscribers.set(target.id, subscription);
-    if (active) {
-      this.notifySubscriberCount(channel);
-    } else if (
+    if (
+      !active &&
       definition.kind === 'snapshot' &&
       this.subscriberCount(channel) === 0
     ) {
       this.latestSnapshots.delete(channel);
     }
+    // A hidden subscription still changes the registered count.
+    this.notifySubscriberCount(channel);
 
     if (
       this.deliveryEnabled &&
@@ -384,12 +393,11 @@ export class ChannelBus {
     subscription?.timer?.cancel();
     const removed = subscribers?.delete(rendererId) ?? false;
     if (subscribers?.size === 0) this.subscriptions.delete(channel);
-    if (removed && subscription?.active) {
-      if (this.subscriberCount(channel) === 0) {
-        this.clearCachedSnapshot(channel);
-      }
-      this.notifySubscriberCount(channel);
+    if (!removed) return;
+    if (subscription?.active && this.subscriberCount(channel) === 0) {
+      this.clearCachedSnapshot(channel);
     }
+    this.notifySubscriberCount(channel);
   }
 
   private setSubscriptionActive(
@@ -418,9 +426,10 @@ export class ChannelBus {
   }
 
   private notifySubscriberCount(channel: string): void {
-    const count = this.subscriberCount(channel);
+    const activeCount = this.subscriberCount(channel);
+    const registeredCount = this.registeredSubscriberCount(channel);
     this.subscriberCountListeners.forEach((listener) =>
-      listener(channel, count)
+      listener(channel, activeCount, registeredCount)
     );
   }
 }
