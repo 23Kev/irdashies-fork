@@ -23,6 +23,7 @@ import {
   INPUT_ELEMENTS,
   buildDefaultInputTree,
   hasLayoutTree,
+  isEmptyLayoutTree,
 } from '../../Input/layout';
 
 const WIDGET_TYPE = 'input';
@@ -46,12 +47,7 @@ const withLayoutTree = (
   config: InputWidgetSettings['config']
 ): InputWidgetSettings['config'] => {
   if (hasLayoutTree(config.layoutTree)) return config;
-  const tree = buildDefaultInputTree(config);
-  const isEmpty = tree.type === 'split' && tree.children.length === 0;
-  return {
-    ...config,
-    layoutTree: isEmpty ? buildDefaultInputTree(defaultConfig) : tree,
-  };
+  return { ...config, layoutTree: buildDefaultInputTree(config) };
 };
 
 export const InputSettings = ({ widgetId }: { widgetId?: string }) => {
@@ -223,11 +219,18 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
               {/* LAYOUT TAB */}
               {activeTab === 'layout' && (
                 <SettingsSection title="Layout Editor">
-                  <LayoutVisualizer
-                    tree={currentTree}
-                    onChange={handleTreeUpdate}
-                    availableWidgets={INPUT_ELEMENTS}
-                  />
+                  {isEmptyLayoutTree(currentTree) ? (
+                    <div className="h-[450px] flex items-center justify-center bg-slate-900 border border-slate-700 rounded text-sm text-slate-400">
+                      This layout shows no elements. Use Reset to Default Layout
+                      to start editing.
+                    </div>
+                  ) : (
+                    <LayoutVisualizer
+                      tree={currentTree}
+                      onChange={handleTreeUpdate}
+                      availableWidgets={INPUT_ELEMENTS}
+                    />
+                  )}
 
                   <SettingActionButton
                     label="Reset to Default Layout"
@@ -429,7 +432,7 @@ const SingleInputWidgetSettings = ({ widgetId }: { widgetId: string }) => {
 
                     <SettingSliderRow
                       title="Max Samples"
-                      value={config.trace.maxSamples ?? 40}
+                      value={config.trace.maxSamples ?? 400}
                       units=" samples"
                       min={40}
                       max={1000}

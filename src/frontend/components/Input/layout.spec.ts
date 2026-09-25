@@ -1,7 +1,12 @@
 import { describe, it, expect } from 'vitest';
 import type { LayoutNode } from '@irdashies/types';
 import { getWidgetDefaultConfig } from '@irdashies/types';
-import { buildDefaultInputTree, getInputLayoutTree } from './layout';
+import {
+  buildDefaultInputTree,
+  getInputLayoutTree,
+  hasLayoutTree,
+  isEmptyLayoutTree,
+} from './layout';
 
 const defaults = getWidgetDefaultConfig('input');
 
@@ -113,5 +118,69 @@ describe('getInputLayoutTree', () => {
       layoutTree: {} as LayoutNode,
     });
     expect(tree.id).toBe('input-root');
+  });
+
+  it('keeps a saved empty tree, so a layout with nothing in it stays empty', () => {
+    const saved: LayoutNode = {
+      id: 'root',
+      type: 'split',
+      direction: 'row',
+      children: [],
+    };
+    expect(getInputLayoutTree({ ...defaults, layoutTree: saved })).toBe(saved);
+  });
+});
+
+describe('hasLayoutTree', () => {
+  const box = (widgets: unknown = ['gear']) => ({
+    id: 'b',
+    type: 'box',
+    direction: 'row',
+    widgets,
+  });
+  const split = (children: unknown[]) => ({
+    id: 's',
+    type: 'split',
+    direction: 'col',
+    children,
+  });
+
+  it('accepts a valid nested tree', () => {
+    expect(hasLayoutTree(split([box(), split([box(['trace'])])]))).toBe(true);
+  });
+
+  it.each([
+    ['null', null],
+    ['a string', 'split'],
+    ['a node with no id', { type: 'box', direction: 'row', widgets: [] }],
+    ['an unknown type', { ...box(), type: 'grid' }],
+    ['a bad direction', { ...box(), direction: 'diagonal' }],
+    ['a box without widgets', { ...box(), widgets: undefined }],
+    ['a box with non-string widgets', box([1])],
+    ['a split without children', { ...split([]), children: undefined }],
+    ['a bad node deep in the tree', split([box(), split([{ id: 'x' }])])],
+    ['a non-numeric weight', { ...box(), weight: 'wide' }],
+  ])('rejects %s', (_label, value) => {
+    expect(hasLayoutTree(value)).toBe(false);
+  });
+
+  it('rejects a tree nested deeper than any real layout', () => {
+    let node: unknown = box();
+    for (let i = 0; i < 20; i++) node = split([node]);
+    expect(hasLayoutTree(node)).toBe(false);
+  });
+});
+
+describe('isEmptyLayoutTree', () => {
+  it('is true only for a split with no children', () => {
+    expect(
+      isEmptyLayoutTree({
+        id: 's',
+        type: 'split',
+        direction: 'row',
+        children: [],
+      })
+    ).toBe(true);
+    expect(isEmptyLayoutTree(buildDefaultInputTree(defaults))).toBe(false);
   });
 });
