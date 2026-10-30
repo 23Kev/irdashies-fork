@@ -19,6 +19,8 @@ const STANDINGS = GROUPS.flatMap(([, drivers]) => drivers);
 const CAR_IDXS = STANDINGS.map((s) => s.carIdx);
 /** The car the preview camera is on. */
 const FOCUS_CAR = 6;
+/** Odd-numbered demo cars have run it, so the joker tag shows. */
+const JOKER_LAPS = 1;
 const CHANGES = new Map([
   [1, { delta: 1, seq: 1 }],
   [2, { delta: -1, seq: 1 }],
@@ -92,6 +94,7 @@ export const BroadcastPreview = ({ module }: { module: string }) => {
             settings={config<BroadcastTickerConfig>(module)}
             groups={GROUPS}
             teamRacing={false}
+            jokerLaps={JOKER_LAPS}
           />
         );
       case 'broadcastevents':
@@ -123,6 +126,7 @@ export const BroadcastPreview = ({ module }: { module: string }) => {
             focusCarIdx={FOCUS_CAR}
             changes={CHANGES}
             hasTyreChoice
+            jokerLaps={JOKER_LAPS}
             showGrid={false}
           />
         );

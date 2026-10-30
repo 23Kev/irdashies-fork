@@ -1313,6 +1313,8 @@ export interface BroadcastConfig {
   showFocusCard: boolean;
   /** Starting grid before the green flag (the podium is its own widget). */
   phaseScreens: boolean;
+  /** Tag cars that have run their joker lap, in sessions that have one. */
+  showJoker: boolean;
   driverNameFormat: NameFormat;
   sessionVisibility: SessionVisibilitySettings;
 }
@@ -1352,6 +1354,8 @@ export interface BroadcastTickerConfig {
   translucent: { enabled: boolean; opacity: number };
   /** Scroll speed: how long each car stays in the loop. */
   secondsPerEntry: number;
+  /** Tag cars that have run their joker lap, in sessions that have one. */
+  showJoker: boolean;
   sessionVisibility: SessionVisibilitySettings;
 }
 

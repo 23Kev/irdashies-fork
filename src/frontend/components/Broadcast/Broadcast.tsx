@@ -7,6 +7,7 @@ import {
   useSessionTimeTiming,
   useSessionVisibility,
   useTrackDisplayName,
+  useWeekendInfoNumJokerLaps,
 } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
 import type { Standings } from '@irdashies/domain';
@@ -61,6 +62,7 @@ export const Broadcast = () => {
   const changes = usePositionChanges(standings, sessionNum);
   const focusCarIdx = useFocusCarIdx();
   const hasTyreChoice = (useDriverTires()?.length ?? 0) > 1;
+  const jokerLaps = useWeekendInfoNumJokerLaps();
   const { sessionType, state: sessionState } = useSessionTimeTiming();
   // The podium after the flag is its own module, Broadcast Podium.
   const showGrid =
@@ -77,6 +79,7 @@ export const Broadcast = () => {
       focusCarIdx={focusCarIdx}
       changes={changes}
       hasTyreChoice={hasTyreChoice}
+      jokerLaps={jokerLaps}
       showGrid={showGrid}
     />
   );
@@ -93,6 +96,7 @@ export const TowerView = ({
   focusCarIdx,
   changes,
   hasTyreChoice,
+  jokerLaps,
   showGrid,
 }: {
   settings: Partial<BroadcastConfig> | undefined;
@@ -101,6 +105,8 @@ export const TowerView = ({
   focusCarIdx?: number;
   changes: ReadonlyMap<number, { delta: number; seq: number }>;
   hasTyreChoice: boolean;
+  /** Joker laps each car must run; 0 when the session has none. */
+  jokerLaps: number;
   showGrid: boolean;
 }) => {
   const perClass = clampSetting(settings?.driversPerClass, 1, 30, 5);
@@ -163,6 +169,7 @@ export const TowerView = ({
       : undefined;
   const focus = standings.find((s) => s.carIdx === focusCarIdx);
   const nameFormat = settings?.driverNameFormat ?? 'surname';
+  const towerJokerLaps = settings?.showJoker === false ? 0 : jokerLaps;
   // Imported or hand-edited dashboards can carry an unknown theme name.
   const theme =
     settings?.theme && Object.hasOwn(THEMES, settings.theme)
@@ -220,6 +227,7 @@ export const TowerView = ({
                       standing={row.standing}
                       page={page}
                       nameFormat={nameFormat}
+                      jokerLaps={towerJokerLaps}
                       positionStyle={look.position}
                       focused={row.standing.carIdx === focusCarIdx}
                     />

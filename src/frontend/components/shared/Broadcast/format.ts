@@ -11,3 +11,7 @@ export const classColor = (color: number) =>
 
 export const driverName = (standing: Standings, format: NameFormat) =>
   formatDriverName(extractDriverName(standing.driver.name), format);
+
+/** Has run every joker lap the session asks for; never when it asks for none. */
+export const jokerDone = (standing: Standings, jokerLaps: number) =>
+  jokerLaps > 0 && (standing.jokerLapsComplete ?? 0) >= jokerLaps;

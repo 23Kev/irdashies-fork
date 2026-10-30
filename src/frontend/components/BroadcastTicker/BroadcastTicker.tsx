@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react';
 import {
   useSessionVisibility,
+  useWeekendInfoNumJokerLaps,
   useWeekendInfoTeamRacing,
 } from '@irdashies/context';
 import { useDriverStandings } from '@irdashies/domain/standings/useDriverStandings';
@@ -15,6 +16,8 @@ import {
 } from '../shared/DriverName/DriverName';
 import { CarManufacturer } from '../shared/CarManufacturer/CarManufacturer';
 import { BroadcastEnter } from '../shared/Broadcast/BroadcastEnter';
+import { jokerDone } from '../shared/Broadcast/format';
+import { JokerBadge } from '../shared/Broadcast/JokerBadge';
 import { useBroadcastConfig } from '@irdashies/domain/broadcast/useBroadcastConfig';
 import { TICKER_MODES, tickerEntries, type TickerMode } from './tickerEntries';
 
@@ -28,10 +31,12 @@ const Entry = ({
   standing,
   mode,
   teamRacing,
+  jokerLaps,
 }: {
   standing: Standings;
   mode: TickerMode;
   teamRacing: boolean;
+  jokerLaps: number;
 }) => (
   <span className="flex shrink-0 items-center gap-2 pr-16 font-bold uppercase">
     <span className="text-lg">{standing.position}</span>
@@ -53,6 +58,7 @@ const Entry = ({
         <CarManufacturer carId={standing.carId} />
       </span>
     )}
+    {jokerDone(standing, jokerLaps) && <JokerBadge full />}
     {mode === 'fastest' && standing.fastestTime > 0 && (
       <span className="tabular-nums">
         {formatTime(standing.fastestTime, 'full')}
@@ -65,13 +71,19 @@ export const BroadcastTicker = () => {
   const settings = useBroadcastConfig('broadcastticker');
   const isSessionVisible = useSessionVisibility(settings?.sessionVisibility);
   const teamRacing = !!useWeekendInfoTeamRacing();
+  const jokerLaps = useWeekendInfoNumJokerLaps();
   const groups = useDriverStandings(undefined, {
     showAll: true,
     livePositions: true,
   });
   if (!isSessionVisible) return null;
   return (
-    <TickerView settings={settings} groups={groups} teamRacing={teamRacing} />
+    <TickerView
+      settings={settings}
+      groups={groups}
+      teamRacing={teamRacing}
+      jokerLaps={jokerLaps}
+    />
   );
 };
 
@@ -80,10 +92,13 @@ export const TickerView = ({
   settings,
   groups,
   teamRacing,
+  jokerLaps,
 }: {
   settings: Partial<BroadcastTickerConfig> | undefined;
   groups: [string, Standings[]][];
   teamRacing: boolean;
+  /** Joker laps each car must run; 0 when the session has none. */
+  jokerLaps: number;
 }) => {
   const [modeIndex, setModeIndex] = useState(0);
   const mode = TICKER_MODES[modeIndex % TICKER_MODES.length];
@@ -116,8 +131,15 @@ export const TickerView = ({
   if (entries.length === 0 || !loop) return null;
 
   const loopSeconds = loop.seconds;
+  const tickerJokerLaps = settings?.showJoker === false ? 0 : jokerLaps;
   const list = entries.map((s) => (
-    <Entry key={s.carIdx} standing={s} mode={mode} teamRacing={teamRacing} />
+    <Entry
+      key={s.carIdx}
+      standing={s}
+      mode={mode}
+      teamRacing={teamRacing}
+      jokerLaps={tickerJokerLaps}
+    />
   ));
 
   return (

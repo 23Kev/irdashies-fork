@@ -16,6 +16,7 @@ export default defineWidgetManifest({
     background: { opacity: 85 },
     translucent: { enabled: false, opacity: 70 },
     secondsPerEntry: 3,
+    showJoker: true,
     sessionVisibility: {
       race: true,
       loneQualify: true,

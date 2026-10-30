@@ -10,7 +10,12 @@ import { CarManufacturer } from '../../shared/CarManufacturer/CarManufacturer';
 import { Compound } from '../../shared/Compound/Compound';
 import { CountryFlag } from '../../shared/CountryFlag/CountryFlag';
 import type { BroadcastRow } from '@irdashies/domain/broadcast/broadcastRows';
-import { classColor, driverName } from '../../shared/Broadcast/format';
+import {
+  classColor,
+  driverName,
+  jokerDone,
+} from '../../shared/Broadcast/format';
+import { JokerBadge } from '../../shared/Broadcast/JokerBadge';
 import { PAGE_LABELS, type Page } from '@irdashies/domain/broadcast/towerPages';
 
 /**
@@ -79,12 +84,15 @@ export const DriverRow = ({
   standing,
   page,
   nameFormat,
+  jokerLaps,
   positionStyle,
   focused,
 }: {
   standing: Standings;
   page: Page;
   nameFormat: NameFormat;
+  /** Joker laps each car must run; 0 hides the joker tag. */
+  jokerLaps: number;
   positionStyle: string;
   /** The car the camera is on. */
   focused: boolean;
@@ -126,6 +134,7 @@ export const DriverRow = ({
         {driverName(standing, nameFormat)}
       </span>
       {standing.radioActive && <MicrophoneIcon size={12} weight="fill" />}
+      {jokerDone(standing, jokerLaps) && <JokerBadge inverted={focused} />}
       <StatusBadges standing={standing} />
       <span className="tabular-nums">
         {page.kind === 'gaps' && !dimmed && <GapCell standing={standing} />}

@@ -3,11 +3,12 @@ import { describe, expect, it, vi } from 'vitest';
 import type { Standings } from '@irdashies/domain';
 import { BroadcastTicker } from './BroadcastTicker';
 
-const standings = vi.hoisted(() => ({ cars: [] as unknown[] }));
+const standings = vi.hoisted(() => ({ cars: [] as unknown[], jokerLaps: 0 }));
 
 vi.mock('@irdashies/context', () => ({
   useSessionVisibility: () => true,
   useWeekendInfoTeamRacing: () => 0,
+  useWeekendInfoNumJokerLaps: () => standings.jokerLaps,
 }));
 vi.mock('@irdashies/domain/standings/useDriverStandings', () => ({
   useDriverStandings: () => [['1', standings.cars]],
@@ -56,5 +57,20 @@ describe('BroadcastTicker', () => {
     const el = marquee(container);
     if (el) fireEvent(el, new Event('webkitAnimationEnd', { bubbles: true }));
     expect(container.textContent).toContain('Manufacturers');
+  });
+
+  it('tags only the cars that have run the joker lap', () => {
+    standings.jokerLaps = 1;
+    standings.cars = [{ ...car(0), jokerLapsComplete: 1 }, car(1)];
+    const { getAllByTitle } = render(<BroadcastTicker />);
+    // The list is drawn twice for the seamless loop.
+    expect(getAllByTitle('Joker lap done')).toHaveLength(2);
+  });
+
+  it('shows no joker tag when the session has no joker lap', () => {
+    standings.jokerLaps = 0;
+    standings.cars = [{ ...car(0), jokerLapsComplete: 1 }];
+    const { queryByTitle } = render(<BroadcastTicker />);
+    expect(queryByTitle('Joker lap done')).toBeNull();
   });
 });

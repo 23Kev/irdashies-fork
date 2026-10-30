@@ -107,6 +107,15 @@ export const BroadcastTickerSettings = () => {
                   onChange={(v) => handleConfigChange({ secondsPerEntry: v })}
                 />
               )}
+              {mark(
+                ['showJoker'],
+                <SettingToggleRow
+                  title="Joker Lap"
+                  description="Tag cars that have run their joker lap, in sessions that have one, such as rallycross."
+                  enabled={config.showJoker}
+                  onToggle={(v) => handleConfigChange({ showJoker: v })}
+                />
+              )}
             </SettingsSection>
 
             <SettingsSection title="Visibility">

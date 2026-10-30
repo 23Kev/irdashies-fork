@@ -56,6 +56,7 @@ export interface Standings {
   carId?: number;
   lapTimeDeltas?: number[]; // Array of deltas vs player's recent laps, most recent last
   lastPitLap?: number;
+  jokerLapsComplete?: number;
   lastLap?: number;
   prevCarTrackSurface?: number;
   carTrackSurface?: number;
@@ -152,6 +153,17 @@ export const createDriverStandings = (
     : [];
   const results =
     resultsPositions.length > 0 ? resultsPositions : qualifyingResults;
+  // Joker laps done in qualifying do not count towards the race.
+  const hasCurrentResults = resultsPositions.length > 0;
+  // A replay carries the final results from its first frame, while the lap
+  // telemetry follows the replay. Joker laps are only taken from results the
+  // car has caught up with; a car out of the world (lap -1) keeps its results.
+  const jokerLapsFor = (result: SessionResults) => {
+    if (!hasCurrentResults) return undefined;
+    const lap = lastLap[result.CarIdx];
+    const caughtUp = lap === undefined || lap < 0 || result.LapsComplete < lap;
+    return caughtUp ? result.JokerLapsComplete : undefined;
+  };
 
   // O(1) carIdx -> Driver lookup; previously we did session.drivers.find() per
   // result row, which is O(N) per call and O(N²) overall in driver count.
@@ -272,6 +284,7 @@ export const createDriverStandings = (
                 ) // Use most recent laps
               : undefined,
         lastPitLap: lastPitLap[result.CarIdx] ?? undefined,
+        jokerLapsComplete: jokerLapsFor(result),
         lastLap: lastLap[result.CarIdx] ?? undefined,
         prevCarTrackSurface: prevCarTrackSurface[result.CarIdx] ?? undefined,
         carTrackSurface:

@@ -349,6 +349,15 @@ export const BroadcastSettings = () => {
                 />
               )}
               {mark(
+                ['showJoker'],
+                <SettingToggleRow
+                  title="Joker Lap"
+                  description="Tag cars that have run their joker lap, in sessions that have one, such as rallycross."
+                  enabled={config.showJoker}
+                  onToggle={(v) => handleConfigChange({ showJoker: v })}
+                />
+              )}
+              {mark(
                 ['driverNameFormat'],
                 <div className="py-2">
                   <div className="text-sm text-slate-300">Driver Name</div>

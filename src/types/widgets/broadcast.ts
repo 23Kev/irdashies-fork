@@ -40,6 +40,7 @@ export default defineWidgetManifest({
     pageTransition: 'random',
     showFocusCard: true,
     phaseScreens: true,
+    showJoker: true,
     driverNameFormat: 'surname',
     sessionVisibility: {
       race: true,

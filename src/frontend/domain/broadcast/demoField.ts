@@ -29,6 +29,7 @@ const car = (
     lap: 24,
     positionChange: (carIdx % 3) - 1,
     lastPitLap: 18 + (carIdx % 3),
+    jokerLapsComplete: carIdx % 2,
     tireCompound: carIdx % 2,
     onPitRoad: false,
     repair: false,

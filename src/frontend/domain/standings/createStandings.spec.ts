@@ -346,6 +346,107 @@ describe('createStandings', () => {
     expect(standings[2].classPosition).toBe(3);
   });
 
+  it('takes joker laps from the current session, not from qualifying', () => {
+    const drivers = [
+      {
+        CarIdx: 0,
+        UserName: 'Driver A',
+        CarNumber: '1',
+        CarClassID: 1,
+        CarIsPaceCar: 0,
+        IsSpectator: 0,
+      },
+    ] as unknown as Driver[];
+    const result = {
+      CarIdx: 0,
+      Position: 1,
+      ClassPosition: 0,
+      FastestTime: 80,
+      LastTime: 80,
+      LapsComplete: 2,
+      JokerLapsComplete: 1,
+    } as SessionResults;
+    const standingsFor = (
+      resultsPositions: SessionResults[],
+      qualifyingResults: SessionResults[],
+      carIdxLap: number[] = []
+    ) =>
+      createDriverStandings(
+        { playerIdx: 0, drivers, qualifyingResults },
+        {},
+        { resultsPositions, resultsFastestLap: [], sessionType: 'Race' },
+        [],
+        carIdxLap,
+        []
+      );
+
+    expect(standingsFor([result], [])[0].jokerLapsComplete).toBe(1);
+    expect(standingsFor([], [result])[0].jokerLapsComplete).toBeUndefined();
+    // Live: the car is on lap 3 and the results cover its 2 laps.
+    expect(standingsFor([result], [], [3])[0].jokerLapsComplete).toBe(1);
+    // Replay: final results while the replay shows the car on lap 1.
+    expect(
+      standingsFor([result], [], [1])[0].jokerLapsComplete
+    ).toBeUndefined();
+    // Out of the world after the flag: the results still stand.
+    expect(standingsFor([result], [], [-1])[0].jokerLapsComplete).toBe(1);
+  });
+
+  // Shaped on a 6 lap rallycross race with one joker lap, sampled before the
+  // start, on lap 3 and after the flag.
+  it('tags each car once it has run its joker, through a race', () => {
+    const drivers = [0, 1, 2, 3, 4, 5].map((carIdx) => ({
+      CarIdx: carIdx,
+      UserName: `Driver ${carIdx}`,
+      CarNumber: String(carIdx + 1),
+      CarClassID: 1,
+      CarIsPaceCar: 0,
+      IsSpectator: 0,
+    })) as unknown as Driver[];
+    const results = (lapsComplete: number, jokers: number[]) =>
+      jokers.map(
+        (joker, carIdx) =>
+          ({
+            CarIdx: carIdx,
+            Position: carIdx + 1,
+            ClassPosition: carIdx,
+            FastestTime: 38,
+            LastTime: 38,
+            LapsComplete: lapsComplete,
+            JokerLapsComplete: joker,
+          }) as SessionResults
+      );
+    const jokersAt = (
+      resultsPositions: SessionResults[],
+      carIdxLap: number[]
+    ) =>
+      createDriverStandings(
+        { playerIdx: 3, drivers, qualifyingResults: [] },
+        {},
+        { resultsPositions, resultsFastestLap: [], sessionType: 'Race' },
+        [],
+        carIdxLap,
+        []
+      )
+        .sort((a, b) => a.carIdx - b.carIdx)
+        .map((s) => s.jokerLapsComplete ?? 0);
+
+    const final = results(6, [1, 1, 1, 1, 1, 1]);
+
+    // Start: no results yet, nobody has run it.
+    expect(jokersAt([], [0, 0, 0, 0, 0, 0])).toEqual([0, 0, 0, 0, 0, 0]);
+    // Lap 3: four cars have run it, two have not.
+    expect(
+      jokersAt(results(2, [1, 0, 1, 1, 0, 1]), [3, 3, 3, 3, 3, 3])
+    ).toEqual([1, 0, 1, 1, 0, 1]);
+    // After the flag, with only the player still in the world.
+    expect(jokersAt(final, [-1, -1, -1, 7, -1, -1])).toEqual([
+      1, 1, 1, 1, 1, 1,
+    ]);
+    // A replay holds the final results from its first lap.
+    expect(jokersAt(final, [1, 1, 1, 1, 1, 1])).toEqual([0, 0, 0, 0, 0, 0]);
+  });
+
   it('should show drivers with laps first, then drivers without laps sorted by car number', () => {
     const makeDriver = (carIdx: number, carNumber: string) => ({
       CarIdx: carIdx,

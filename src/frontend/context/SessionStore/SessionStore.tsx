@@ -110,6 +110,13 @@ export const useWeekendInfoNumCarClasses = () =>
 export const useWeekendInfoTeamRacing = () =>
   useStore(useSessionStore, (state) => state.session?.WeekendInfo?.TeamRacing);
 
+/** Joker laps each car must run, as on rallycross tracks; 0 when none. */
+export const useWeekendInfoNumJokerLaps = () =>
+  useStore(
+    useSessionStore,
+    (state) => state.session?.WeekendInfo?.WeekendOptions?.NumJokerLaps ?? 0
+  );
+
 export const useTrackDisplayName = () =>
   useStore(
     useSessionStore,
