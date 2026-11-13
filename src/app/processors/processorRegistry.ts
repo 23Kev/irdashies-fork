@@ -127,7 +127,11 @@ export const createProcessorDefinitions = ({
   }),
   defineProcessor({
     channel: 'pit-stop-estimate.snapshot',
-    dependencies: ['reference-laps.snapshot', 'fuel.projection'],
+    dependencies: [
+      'reference-laps.snapshot',
+      'fuel.projection',
+      'lap-times.snapshot',
+    ],
     // Keep learning from other cars' stops while the map is minimised.
     processWhileHidden: true,
     metricsPrefix: 'pitStopEstimate',
@@ -141,6 +145,7 @@ export const createProcessorDefinitions = ({
                 : pitStopEstimate.persistence,
               referenceLaps: () => snapshot('reference-laps.snapshot'),
               fuel: () => snapshot('fuel.projection'),
+              lapTimes: () => snapshot('lap-times.snapshot'),
             }
           : null
       ),
