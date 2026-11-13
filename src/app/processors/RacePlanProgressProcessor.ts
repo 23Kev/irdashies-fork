@@ -369,7 +369,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
     } else if (
       race?.finished &&
       this.awaitingFinalLap &&
-      teamLaps > (this.lastTeamLaps ?? teamLaps)
+      teamLaps > (this.lastTeamLaps ?? this.lapFloor())
     ) {
       // Finished at cool-down before crossing: the next lap is the last one.
       this.awaitingFinalLap = false;
@@ -948,6 +948,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       raceStartMs: record.raceStartMs,
       finished: record.finished,
     };
+    this.awaitingFinalLap = record.awaitingFinalLap === true;
     this.stints = record.stints.map((stint) => ({ ...stint }));
     this.stops = record.stops.slice(-MAX_RACE_PLAN_STOPS);
     this.lastDriverId = this.stints.at(-1)?.driverId ?? null;
@@ -962,6 +963,7 @@ export class RacePlanProgressProcessor implements TelemetryProcessor<
       greenSessionTime: this.race.greenSessionTime,
       raceStartMs: this.race.raceStartMs,
       finished: this.race.finished,
+      ...(this.awaitingFinalLap ? { awaitingFinalLap: true } : {}),
       stints: this.stints.map((stint) => ({ ...stint })),
       stops: this.stops,
     });

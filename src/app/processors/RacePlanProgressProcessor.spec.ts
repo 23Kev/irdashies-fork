@@ -1197,6 +1197,61 @@ describe('RacePlanProgressProcessor', () => {
     expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
   });
 
+  describe('after a restart once the race is finished', () => {
+    const restart = (
+      sim: Sim,
+      persistence: ReturnType<typeof memoryPersistence>
+    ) => {
+      const restarted = new RacePlanProgressProcessor({
+        getPlan: fixturePlan,
+        persistence,
+        now: () => CLOCK_BASE_MS + sim.time * 1000,
+      });
+      sim.processor = restarted;
+      restarted.init(makeSession(sim.sessionOptions));
+    };
+
+    it('still counts the last lap of a cool-down finish, then stops', () => {
+      const persistence = memoryPersistence();
+      const { sim } = start({ persistence });
+      sim.driveLaps(2);
+      sim.state = SessionState.Checkered;
+      sim.tick(10);
+      sim.state = SessionState.CoolDown;
+      sim.tick();
+      expect(persistence.records.get(SUB_SESSION_ID)).toMatchObject({
+        finished: true,
+        awaitingFinalLap: true,
+      });
+
+      restart(sim, persistence);
+      sim.driveLaps(2);
+      expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+      const saved = persistence.records.get(SUB_SESSION_ID);
+      expect(saved?.stints[0]).toMatchObject({ endLap: 3 });
+      expect(saved?.awaitingFinalLap).toBeUndefined();
+    });
+
+    it('keeps the crossing lap of a crossing finish', () => {
+      const persistence = memoryPersistence();
+      const { sim } = start({ persistence });
+      sim.driveLaps(2);
+      sim.state = SessionState.Checkered;
+      sim.lap();
+      expect(
+        persistence.records.get(SUB_SESSION_ID)?.awaitingFinalLap
+      ).toBeUndefined();
+
+      restart(sim, persistence);
+      sim.state = SessionState.CoolDown;
+      sim.driveLaps(2);
+      expect(lastInput().actual[0]).toMatchObject({ endLap: 3 });
+      expect(persistence.records.get(SUB_SESSION_ID)?.stints[0]).toMatchObject({
+        endLap: 3,
+      });
+    });
+  });
+
   it('starts a later race session from its own lap count', () => {
     const { sim } = start();
     sim.driveLaps(5);

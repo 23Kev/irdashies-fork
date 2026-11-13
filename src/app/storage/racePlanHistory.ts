@@ -38,6 +38,8 @@ export interface RacePlanHistoryRecord {
   /** Epoch milliseconds of the green flag on this PC's clock. */
   raceStartMs: number;
   finished: boolean;
+  /** Finished at cool-down before crossing: the next lap is the last one. */
+  awaitingFinalLap?: true;
   stints: RacePlanHistoryStint[];
   stops: RacePlanStop[];
 }
@@ -149,7 +151,8 @@ const sanitizeRecord = (value: unknown): StoredRecord | null => {
     !isFiniteNumber(raw.greenSessionTime) ||
     !isFiniteNumber(raw.raceStartMs) ||
     !isFiniteNumber(raw.savedAt) ||
-    typeof raw.finished !== 'boolean'
+    typeof raw.finished !== 'boolean' ||
+    (raw.awaitingFinalLap !== undefined && raw.awaitingFinalLap !== true)
   )
     return null;
   return {
@@ -158,6 +161,7 @@ const sanitizeRecord = (value: unknown): StoredRecord | null => {
     greenSessionTime: raw.greenSessionTime,
     raceStartMs: raw.raceStartMs,
     finished: raw.finished,
+    ...(raw.awaitingFinalLap === true ? { awaitingFinalLap: true } : {}),
     stints,
     stops,
     savedAt: raw.savedAt,
@@ -189,6 +193,7 @@ const copyRecord = (record: RacePlanHistoryRecord): RacePlanHistoryRecord => ({
   greenSessionTime: record.greenSessionTime,
   raceStartMs: record.raceStartMs,
   finished: record.finished,
+  ...(record.awaitingFinalLap ? { awaitingFinalLap: true } : {}),
   stints: record.stints
     .slice(-MAX_RACE_PLAN_HISTORY_ENTRIES)
     .map((stint) => ({ ...stint })),

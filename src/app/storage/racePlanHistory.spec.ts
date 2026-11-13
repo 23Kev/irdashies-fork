@@ -123,6 +123,18 @@ describe('race plan history store', () => {
     expect(reloaded.get(77)).toEqual(joined);
   });
 
+  it('preserves a pending final lap through a disk reload', async () => {
+    const store = createRacePlanHistoryStore(file);
+    await store.load();
+    const finished = record(78, { finished: true, awaitingFinalLap: true });
+    store.save(finished);
+    await store.flush();
+
+    const reloaded = createRacePlanHistoryStore(file);
+    await reloaded.load();
+    expect(reloaded.get(78)).toEqual(finished);
+  });
+
   it(`keeps the ${MAX_RACE_PLAN_HISTORY_SESSIONS} most recently saved sessions`, async () => {
     let clock = 0;
     const store = createRacePlanHistoryStore(file, () => (clock += 1));
@@ -183,6 +195,7 @@ describe('race plan history store', () => {
             stints: [{ ...record(6).stints[0], fueled: 'yes' }],
             savedAt: 1,
           },
+          { ...record(7), awaitingFinalLap: 'yes', savedAt: 0 },
         ],
       })
     );
@@ -193,6 +206,7 @@ describe('race plan history store', () => {
     expect(store.get(4)).toBeNull();
     expect(store.get(5)).toBeNull();
     expect(store.get(6)).toBeNull();
+    expect(store.get(7)).toBeNull();
   });
 
   it('keeps a session saved while the file was being read', async () => {
