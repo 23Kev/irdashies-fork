@@ -204,6 +204,15 @@ export async function publishIRacingSDKEvents(
       ? await import('../../storage/radarPoleSideOverrides')
       : undefined;
     await radarPoleSideStorage?.loadRadarPoleSideOverrides();
+    const pitStopModelStorage = channelBus
+      ? await import('../../storage/pitStopModel')
+      : undefined;
+    const pitLaneStorage = channelBus
+      ? await import('../../storage/pitLaneData')
+      : undefined;
+    const pitStopReportStorage = channelBus
+      ? await import('../../storage/pitStopReports')
+      : undefined;
     const processorHost =
       channelBus && referenceLapStorage
         ? createDefaultProcessorHost({
@@ -218,6 +227,14 @@ export async function publishIRacingSDKEvents(
             },
             radarTuning: radarTuningStorage?.getRadarTuning,
             radarPoleSides: radarPoleSideStorage?.radarPoleSideOverrides,
+            pitStopEstimate: pitStopModelStorage && {
+              persistence: pitStopModelStorage.getPitStopModelStore(),
+              pitLane: pitLaneStorage?.getPitLaneDataForTrack,
+              report: (report) => {
+                logger.info(`[PitStopEstimate] ${JSON.stringify(report)}`);
+                void pitStopReportStorage?.appendPitStopReport(report);
+              },
+            },
           })
         : undefined;
 

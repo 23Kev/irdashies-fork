@@ -8,6 +8,7 @@ import type {
 } from '../streamChat';
 import type { ReplayContextSnapshot } from './replayContext';
 import type { PitLaneCalibration } from '../pitLane';
+import type { PitStopEstimateSnapshot } from '../pitStop';
 
 export type SessionLifecycleEvent =
   | { type: 'enter'; replay: boolean }
@@ -24,6 +25,7 @@ export interface ChannelPayloads {
   'lap-times.snapshot': LapTimesSnapshot;
   'lap-log.snapshot': LapLogSnapshot;
   'lap-history.snapshot': LapHistorySnapshot;
+  'pit-stop-estimate.snapshot': PitStopEstimateSnapshot;
   'reference-laps.snapshot': ReferenceLapsSnapshot;
   'radar.snapshot': RadarSnapshot;
   'radio.snapshot': RadioSnapshot;
@@ -691,6 +693,11 @@ export const channelRegistry = {
     kind: 'snapshot',
     defaultRateHz: 5,
     maxRateHz: 25,
+  },
+  'pit-stop-estimate.snapshot': {
+    kind: 'snapshot',
+    defaultRateHz: 10,
+    maxRateHz: 10,
   },
   'lap-times.snapshot': {
     kind: 'snapshot',

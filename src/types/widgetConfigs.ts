@@ -346,6 +346,12 @@ export interface TrackMapConfig {
     enabled: boolean;
   };
   playerIcon?: { enabled: boolean; fileName: string };
+  pitExitEstimate?: PitExitEstimateSettings;
+}
+
+export interface PitExitEstimateSettings {
+  enabled: boolean;
+  showWhen: 'always' | 'fuelStopNeeded';
 }
 
 export interface FlatTrackMapConfig {
@@ -361,6 +367,7 @@ export interface FlatTrackMapConfig {
   invertLeaderColor: boolean;
   showOnlyWhenOnTrack: boolean;
   sessionVisibility: SessionVisibilitySettings;
+  pitExitEstimate?: PitExitEstimateSettings;
 }
 
 export interface SteerConfig {
